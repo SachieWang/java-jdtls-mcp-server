@@ -29,24 +29,38 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         tools: [
             {
                 name: "java_start",
-                description: "Start the Java Language Server (JDT.LS). Required before other commands.",
+                description: "Start the Java Language Server (JDT.LS). Required before other commands. If already running, it will restart.",
                 inputSchema: {
                     type: "object",
                     properties: {
-                        javaPath: {
+                        jdtlsScriptPath: {
                             type: "string",
-                            description: "Path to java executable",
-                        },
-                        launcherPath: {
-                            type: "string",
-                            description: "Path to JDT.LS launcher jar (e.g. plugins/org.eclipse.equinox.launcher_....jar)",
+                            description: "Path to JDT.LS wrapper script (e.g. bin/jdtls or bin/jdtls.bat)",
                         },
                         workspacePath: {
                             type: "string",
                             description: "Path to the workspace root",
                         },
                     },
-                    required: ["javaPath", "launcherPath", "workspacePath"],
+                    required: ["jdtlsScriptPath", "workspacePath"],
+                },
+            },
+            {
+                name: "java_restart",
+                description: "Restart the Java Language Server (JDT.LS).",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        jdtlsScriptPath: {
+                            type: "string",
+                            description: "Path to JDT.LS wrapper script",
+                        },
+                        workspacePath: {
+                            type: "string",
+                            description: "Path to the workspace root",
+                        },
+                    },
+                    required: ["jdtlsScriptPath", "workspacePath"],
                 },
             },
             {
@@ -143,10 +157,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
         switch (name) {
             case "java_start": {
-                const { javaPath, launcherPath, workspacePath } = args as any;
-                await javaServer.start(javaPath, launcherPath, workspacePath);
+                const { jdtlsScriptPath, workspacePath } = args as any;
+                if (javaServer.isRunning()) {
+                    await javaServer.stop();
+                }
+                await javaServer.start(jdtlsScriptPath, workspacePath);
                 return {
                     content: [{ type: "text", text: "Java Language Server started successfully." }],
+                };
+            }
+            case "java_restart": {
+                const { jdtlsScriptPath, workspacePath } = args as any;
+                await javaServer.stop();
+                await javaServer.start(jdtlsScriptPath, workspacePath);
+                return {
+                    content: [{ type: "text", text: "Java Language Server restarted successfully." }],
                 };
             }
             case "java_open_file": {
@@ -192,6 +217,22 @@ async function run() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
     console.error("Java MCP Server running on stdio");
+
+    // Auto-start if env vars are present
+    const jdtlsScriptPath = process.env.JDTLS_SCRIPT_PATH;
+    const workspacePath = process.env.JAVA_WORKSPACE_PATH;
+
+    if (jdtlsScriptPath && workspacePath) {
+        try {
+            console.error("Auto-starting JDT.LS...");
+            await javaServer.start(jdtlsScriptPath, workspacePath);
+            console.error("JDT.LS auto-started successfully.");
+        } catch (e: any) {
+            console.error(`Failed to auto-start JDT.LS: ${e.message}`);
+        }
+    } else {
+        console.error("JDT.LS auto-start skipped: Missing environment variables (JDTLS_SCRIPT_PATH, JAVA_WORKSPACE_PATH).");
+    }
 }
 
 run().catch((error) => {

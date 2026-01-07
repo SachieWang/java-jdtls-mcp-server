@@ -12,45 +12,23 @@ export class JavaLanguageServer {
     constructor() { }
 
     async start(
-        javaPath: string,
-        launcherPath: string,
+        scriptPath: string,
         workspacePath: string
     ): Promise<void> {
         if (this.connection) {
             return;
         }
 
-        const configName = process.platform === 'win32' ? 'config_win' : 'config_linux';
-        // Assuming standard JDT.LS structure where config is sibling to plugins or inside
-        // Actually, usually the launcher is in plugins/ and config is in config_win/ at root of jdtls install
-        // We might need the user to point to the server home, or just the launcher jar.
-        // Let's try to deduce config path from launcher path if possible, or just ask for server home.
-
-        // For simplicity, let's assume the user passes the full command or we construct it carefully.
-        // Let's assume 'serverHome' is passed.
-
-        const serverHome = path.dirname(path.dirname(launcherPath)); // assuming plugins/launcher.jar
-
         const args = [
-            '-Declipse.application=org.eclipse.jdt.ls.core.id1',
-            '-Dosgi.bundles.defaultStartLevel=4',
-            '-Declipse.product=org.eclipse.jdt.ls.core.product',
-            '-Dlog.level=ALL',
-            '-noverify',
-            '-Xmx1G',
-            '--add-modules=ALL-SYSTEM',
-            '--add-opens', 'java.base/java.util=ALL-UNNAMED',
-            '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
-            '-jar', launcherPath,
-            '-configuration', path.join(serverHome, configName),
             '-data', workspacePath
         ];
 
-        console.error(`Starting JDT.LS with: ${javaPath} ${args.join(' ')}`);
+        console.error(`Starting JDT.LS with: ${scriptPath} ${args.join(' ')}`);
 
-        this.process = spawn(javaPath, args, {
+        this.process = spawn(scriptPath, args, {
             cwd: workspacePath,
-            env: process.env
+            env: process.env,
+            shell: true
         });
 
         if (!this.process.stdout || !this.process.stdin) {
@@ -114,6 +92,10 @@ export class JavaLanguageServer {
         console.error('JDT.LS Initialized');
     }
 
+    isRunning(): boolean {
+        return !!this.connection;
+    }
+
     async stop() {
         if (this.connection) {
             await this.connection.sendRequest('shutdown');
@@ -167,6 +149,4 @@ export class JavaLanguageServer {
             }
         });
     }
-
-    // Add more methods as needed
 }
