@@ -1,0 +1,35 @@
+{
+  "name": "java-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server for Java using JDT.LS",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "java-mcp-server": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "java",
+    "lsp",
+    "jdtls"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "vscode-jsonrpc": "^8.2.1",
+    "vscode-languageserver-protocol": "^3.17.5",
+    "zod": "^4.3.5"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.3",
+    "typescript": "^5.9.3"
+  }
+}
