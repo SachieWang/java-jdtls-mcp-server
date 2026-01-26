@@ -161,6 +161,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     required: ["filePath"],
                 },
             },
+            {
+                name: "java_load_maven_project",
+                description: "Load a Maven Java project into the language server workspace. This causes JDTLS to index the project, resolving dependencies and symbols across the entire project without needing to open files individually.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        projectPath: {
+                            type: "string",
+                            description: "Absolute path to the root of the Maven project (containing pom.xml)",
+                        },
+                    },
+                    required: ["projectPath"],
+                },
+            },
         ],
     };
 });
@@ -223,6 +237,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 const result = await javaServer.getDiagnostics(filePath);
                 return {
                     content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                };
+            }
+            case "java_load_maven_project": {
+                const { projectPath } = args as any;
+                await javaServer.addWorkspaceFolder(projectPath);
+                return {
+                    content: [{ type: "text", text: `Project loaded: ${projectPath}` }],
                 };
             }
             default:

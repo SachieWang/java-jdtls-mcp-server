@@ -341,4 +341,22 @@ export class JavaLanguageServer {
         // we might need to be careful, but pathToFileURL is standard.
         return this.diagnostics.get(uri) || [];
     }
+
+    async addWorkspaceFolder(folderPath: string) {
+        if (!this.connection) throw new Error('Server not started');
+        const uri = pathToFileURL(folderPath).toString();
+        const baseName = path.basename(folderPath);
+
+        return this.connection.sendNotification('workspace/didChangeWorkspaceFolders', {
+            event: {
+                added: [
+                    {
+                        uri: uri,
+                        name: baseName
+                    }
+                ],
+                removed: []
+            }
+        });
+    }
 }
