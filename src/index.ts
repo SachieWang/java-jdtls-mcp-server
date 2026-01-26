@@ -241,7 +241,7 @@ async function run() {
     await server.connect(transport);
     console.error("Java MCP Server running on stdio");
 
-    // Auto-start if env vars are present
+    // Auto-start if env vars are present (Lazy / Non-blocking)
     const jdtlsHome = process.env.JDTLS_HOME;
     const workspacePath = process.env.JAVA_WORKSPACE_PATH;
 
@@ -251,13 +251,11 @@ async function run() {
 
     if (jdtlsHome) {
         const finalWorkspacePath = workspacePath || process.cwd();
-        try {
-            console.error(`Auto-starting JDT.LS with workspace: ${finalWorkspacePath}...`);
-            await javaServer.start(jdtlsHome, finalWorkspacePath);
-            console.error("JDT.LS auto-started successfully.");
-        } catch (e: any) {
-            console.error(`Failed to auto-start JDT.LS: ${e.message}`);
-        }
+        // Fire and forget - do NOT await this.
+        // If it fails, we want the MCP server to stay alive so the agent can debug it.
+        javaServer.start(jdtlsHome, finalWorkspacePath)
+            .then(() => console.error("JDT.LS auto-started successfully."))
+            .catch((e: any) => console.error(`[WARNING] Failed to auto-start JDT.LS: ${e.message}`));
     } else {
         console.error("JDT.LS auto-start skipped: Missing JDTLS_HOME environment variable.");
     }
