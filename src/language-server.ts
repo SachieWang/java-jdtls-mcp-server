@@ -91,10 +91,13 @@ export class JavaLanguageServer {
         }
 
         // 1. 推断 JDT.LS 的安装根目录
+        if (!jdtlsHomeInput) {
+            throw new Error('未指定 JDT.LS 的安装路径 (JDTLS_HOME)。请设置该环境变量，或在调用 java_start 时直接提供路径。');
+        }
         let jdtlsHome = jdtlsHomeInput;
         // 兼容性处理：如果传入的是 bin/jdtls 或 bin/jdtls.bat
         if (jdtlsHomeInput.endsWith('.bat') || jdtlsHomeInput.endsWith('jdtls') || jdtlsHomeInput.includes('bin')) {
-            if (fs.statSync(jdtlsHomeInput).isFile()) {
+            if (fs.existsSync(jdtlsHomeInput) && fs.statSync(jdtlsHomeInput).isFile()) {
                 jdtlsHome = path.dirname(path.dirname(jdtlsHomeInput));
             }
         }

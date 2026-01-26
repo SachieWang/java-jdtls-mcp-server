@@ -18,11 +18,14 @@ This skill manages the underlying Eclipse JDT.LS process. It is the foundation f
 ### 1. Initialization
 When the session begins, or if you receive "Server not started" errors:
 
-1.  **Check Environment**: Look for `JDTLS_HOME` environment variable or ask the user for the JDT.LS path.
-2.  **Start**:
+1.  **Check Environment**:
+    - Try to find `JDTLS_HOME` in the environment.
+    - If it's missing, **STOP** and ask the user: "I couldn't find the JDTLS installation path. Could you please provide the absolute path to your JDT.LS root directory?"
+2.  **Start**: Once you have the path (either from environment or user), call `java_start`.
     ```json
     { "jdtlsHome": "/path/to/jdtls" }
     ```
+    *Note: If the user provides the path, remember it for the duration of the session.*
 
 ### 2. Recovering from Stale State
 If the server seems unresponsive or symbol lookups are consistently failing:
