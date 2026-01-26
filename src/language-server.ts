@@ -10,6 +10,7 @@ export class JavaLanguageServer {
     private process: ChildProcess | null = null;
     private connection: rpc.MessageConnection | null = null;
     private capabilities: any = null;
+    private diagnostics: Map<string, any[]> = new Map();
 
     constructor() { }
 
@@ -195,6 +196,14 @@ export class JavaLanguageServer {
 
         this.connection.listen();
 
+        this.connection.onNotification('textDocument/publishDiagnostics', (params) => {
+            const uri = params.uri;
+            // Clean up URI to be a file path for easier mapping if needed, 
+            // but keeping URI as key is safer.
+            // We can normalize when retrieving.
+            this.diagnostics.set(uri, params.diagnostics);
+        });
+
         console.error('[STEP 3] Sending "initialize" request...');
         try {
             const initResult = await this.connection.sendRequest('initialize', {
@@ -319,5 +328,14 @@ export class JavaLanguageServer {
                 text: content
             }
         });
+    }
+
+    async getDiagnostics(filePath: string) {
+        // Normalize path to URI to match map keys
+        const uri = pathToFileURL(filePath).toString();
+
+        // Sometimes JDT.LS might use slightly different URI encoding, 
+        // we might need to be careful, but pathToFileURL is standard.
+        return this.diagnostics.get(uri) || [];
     }
 }

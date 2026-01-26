@@ -147,6 +147,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     required: ["filePath", "line", "character"],
                 },
             },
+            {
+                name: "java_get_diagnostics",
+                description: "Get diagnostics (errors/warnings) for a file. Note: This tool relies on the server's asynchronous publishing of diagnostics. You may need to wait a moment after opening or editing a file before calling this.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        filePath: {
+                            type: "string",
+                            description: "Absolute path to the file",
+                        },
+                    },
+                    required: ["filePath"],
+                },
+            },
         ],
     };
 });
@@ -200,6 +214,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             case "java_get_hover": {
                 const { filePath, line, character } = args as any;
                 const result = await javaServer.getHover(filePath, line, character);
+                return {
+                    content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                };
+            }
+            case "java_get_diagnostics": {
+                const { filePath } = args as any;
+                const result = await javaServer.getDiagnostics(filePath);
                 return {
                     content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
                 };

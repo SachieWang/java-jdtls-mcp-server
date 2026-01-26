@@ -1,0 +1,14 @@
+{
+    "name": "java-jdtls-mcp-server",
+    "version": "1.0.0",
+    "contextFileName": "GEMINI.md",
+    "mcpServers": {
+        "java": {
+            "command": "node",
+            "args": [
+                "${extensionPath}${/}dist${/}index.js"
+            ],
+            "cwd": "${extensionPath}"
+        }
+    }
+}
