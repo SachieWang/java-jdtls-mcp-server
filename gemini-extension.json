@@ -10,5 +10,17 @@
             ],
             "cwd": "${extensionPath}"
         }
-    }
+    },
+    "settings": [
+        {
+            "name": "JDT.LS Home",
+            "description": "Absolute path to your Eclipse JDT.LS installation directory (e.g., /opt/jdtls).",
+            "envVar": "JDTLS_HOME"
+        },
+        {
+            "name": "Java Home",
+            "description": "Absolute path to your JDK installation (optional, defaults to system JAVA_HOME).",
+            "envVar": "JAVA_HOME"
+        }
+    ]
 }
