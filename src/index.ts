@@ -222,6 +222,10 @@ async function run() {
     const jdtlsScriptPath = process.env.JDTLS_SCRIPT_PATH;
     const workspacePath = process.env.JAVA_WORKSPACE_PATH;
 
+    console.error(`Checking auto-start env vars...`);
+    console.error(`JDTLS_SCRIPT_PATH: ${jdtlsScriptPath || 'undefined'}`);
+    console.error(`JAVA_WORKSPACE_PATH: ${workspacePath || 'undefined'}`);
+
     if (jdtlsScriptPath && workspacePath) {
         try {
             console.error("Auto-starting JDT.LS...");
