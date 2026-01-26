@@ -1,4 +1,5 @@
 ---
+title: java-code-navigation
 title: Java Code Navigation
 description: Navigate Java projects, find definitions, and implementation details.
 ---

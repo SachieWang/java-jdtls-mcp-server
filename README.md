@@ -1,58 +1,50 @@
-# Java MCP Server
+# Java MCP Server & Gemini Extension
 
 [English](./README.md) | [简体中文](./docs/README_zh.md)
 
-This is a Model Context Protocol (MCP) server that provides professional Java language features by interfacing with the Eclipse JDT.LS (Java Language Server). It acts as a bridge, allowing AI agents like Claude Code, Gemini, and other MCP clients to understand and navigate Java codebases with high precision.
+This project is a high-performance bridge between AI agents and Java codebases. It functions as both a **Model Context Protocol (MCP) server** and a **Gemini CLI Extension**, providing professional-grade Java language intelligence through Eclipse JDT.LS.
 
 ## 🌟 Key Features
 
-- **Native JDT.LS Launch**: Directly launches the Java Language Server via JVM, bypassing fragile shell wrappers (`.bat` or `.py`) for better stability.
-- **Environment Isolation**: Automatically clears conflicting environment variables (like `PORT`) often injected by MCP Inspector, ensuring reliable StdIO communication.
-- **Instance Isolation**: Uses workspace path hashing to create unique, isolated data directories in the system cache, preventing workspace locking issues.
-- **Smart Pathing**: 
-  - Automatically identifies JDT.LS home from the provided path.
-  - Automatically locates the Equinox launcher and OS-specific configuration.
-  - Automatically falls back to the current working directory (CWD) if no workspace path is provided.
-- **Full LSP Capabilities**: Supports symbol definitions, references, hover documentation, and file synchronization.
-- **Cross-Platform**: Fully compatible with Windows, macOS, and Linux.
+- **Gemini Extension & Agent Skills**: Pre-packaged with structured [Agent Skills](./skills/) for Navigation, Verification, and Lifecycle management, ensuring AI agents follow optimal workflows.
+- **Native JDT.LS Launch**: Directly spawns the Java Language Server via JVM for maximum stability and performance.
+- **Diagnostics Support**: Real-time retrieval of compilation errors and warnings to help AI agents verify their code changes.
+- **Instance Isolation**: Uses workspace path hashing to create isolated data directories, preventing workspace locking and allowing multi-project workflows.
+- **Environment Isolation**: Automatically clears conflicting environment variables (like `PORT`) for reliable StdIO communication.
+- **Full LSP Capabilities**: Supports Go to Definition, Find References, Hover documentation, and efficient file synchronization.
 
 ## 🛠️ Prerequisites
 
 - **Node.js**: v18.0.0 or higher.
 - **Java Development Kit (JDK)**: Java 17 or higher (Java 21+ recommended).
-- **Eclipse JDT.LS**: An installation of the [Eclipse JDT.LS](https://download.eclipse.org/jdtls/snapshots/?v=latest).
+- **Eclipse JDT.LS**: An installation of [Eclipse JDT.LS](https://download.eclipse.org/jdtls/snapshots/?v=latest).
 
-## 🚀 Installation
+## 🚀 Installation & Setup
 
-### Option A: Install via Git (Recommended)
+### For Gemini CLI (Extension Mode)
 
-The most elegant way to install without a public npm repository:
+This project is optimized for use as a Gemini CLI extension. It includes `gemini-extension.json` and `GEMINI.md` for seamless integration.
 
 ```bash
-# Install globally (provides 'java-mcp-server' command)
+# Clone the repository
+git clone <repository-url>
+cd java-jdtls-mcp-server
+npm install && npm run build
+
+# Add to your gemini-cli configuration
+# The CLI will automatically recognize the extension and the bundled Agent Skills
+```
+
+### For Claude Code / Other MCP Clients
+
+```bash
+# Install globally via Git
 npm install -g git+https://git.wind.com.cn/zxwang.sachiew/java-jdtls-mcp-server.git
 ```
 
-### Option B: Run with npx
+## 📖 Configuration
 
-```bash
-npx git+https://git.wind.com.cn/zxwang.sachiew/java-jdtls-mcp-server.git
-```
-
-### Option C: Source-based Installation
-
-```bash
-git clone <repository-url>
-cd java-jdtls-mcp-server
-npm install
-npm run build
-```
-
-## 📖 Usage
-
-### MCP Client Configuration
-
-Add the following to your MCP configuration file (e.g., `claude_desktop_config.json`):
+### MCP Client Config (e.g., `claude_desktop_config.json`)
 
 ```json
 {
@@ -82,24 +74,23 @@ Add the following to your MCP configuration file (e.g., `claude_desktop_config.j
 
 | Tool Name | Description | Key Parameters |
 | :--- | :--- | :--- |
-| `java_start` | Initializes JDT.LS. Restarts if already running. | `jdtlsHome`, `workspacePath` (optional) |
-| `java_restart` | Forces a restart of the JDT.LS process. | `jdtlsHome`, `workspacePath` (optional) |
+| `java_start` | Initializes JDT.LS. Restarts if already running. | `jdtlsHome`, `workspacePath` |
+| `java_restart` | Forces a fresh restart of the JDT.LS process. | `jdtlsHome`, `workspacePath` |
 | `java_open_file` | Synchronizes file content to the server. | `filePath`, `content` |
+| `java_get_diagnostics` | **New!** Retrieves cached errors and warnings. | `filePath` |
 | `java_get_definition` | Retrieves the definition location for a symbol. | `filePath`, `line`, `character` |
 | `java_get_references` | Finds all references for a symbol. | `filePath`, `line`, `character` |
 | `java_get_hover` | Gets type info and documentation for a symbol. | `filePath`, `line`, `character` |
 
-## 🔍 Technical Details
+## 🧠 Agent Skills
 
-### Instance Data Storage
-The server stores JDT.LS internal data in a hashed directory within the OS's standard cache folder:
-- **Windows**: `%APPDATA%\jdtls\jdtls-<projectName>-<hash>`
-- **macOS**: `~/Library/Caches/jdtls/jdtls-<projectName>-<hash>`
-- **Linux**: `~/.cache/jdtls/jdtls-<projectName>-<hash>`
+The folder `skills/` contains specialized Markdown files that guide AI agents on how to use these tools effectively:
 
-### Encoding
-Forces `UTF-8` encoding via `JAVA_TOOL_OPTIONS` for cross-platform consistency of logs and source code.
+- **[Navigation](./skills/java-navigation/SKILL.md)**: Strategies for exploring codebases.
+- **[Verification](./skills/java-verification/SKILL.md)**: Workflows for checking code correctness.
+- **[Lifecycle](./skills/java-lifecycle/SKILL.md)**: Handling server initialization.
 
 ## 📄 License
 
 This project is licensed under the ISC License.
+

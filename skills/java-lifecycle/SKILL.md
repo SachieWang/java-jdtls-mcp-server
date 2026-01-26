@@ -1,4 +1,5 @@
 ---
+name: java-server-lifecycle
 title: Java Server Lifecycle
 description: Manage the Java Language Server process.
 ---
