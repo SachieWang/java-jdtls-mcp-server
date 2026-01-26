@@ -1,5 +1,5 @@
 ---
-title: java-code-verification
+name: java-code-verification
 title: Java Code Verification
 description: Verify Java code correctness, find syntax errors and compile-time issues.
 ---
