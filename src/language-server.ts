@@ -3,6 +3,8 @@ import * as rpc from 'vscode-jsonrpc/node.js';
 import { pathToFileURL } from 'url';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as os from 'os';
+import * as crypto from 'crypto';
 
 export class JavaLanguageServer {
     private process: ChildProcess | null = null;
@@ -59,6 +61,26 @@ export class JavaLanguageServer {
         return configPath;
     }
 
+    private getDataDir(workspacePath: string): string {
+        // 参考 jdtls.py 逻辑制作唯一的实例路径
+        const workspaceHash = crypto.createHash('sha1').update(workspacePath).digest('hex');
+        const baseName = path.basename(workspacePath);
+
+        let cacheDir: string;
+        if (process.platform === 'win32' && process.env.APPDATA) {
+            cacheDir = process.env.APPDATA;
+        } else if (process.platform === 'darwin') {
+            cacheDir = path.join(os.homedir(), 'Library', 'Caches');
+        } else {
+            // Linux 或其他
+            cacheDir = process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache');
+        }
+
+        const jdtlsCache = path.join(cacheDir, 'jdtls');
+        // 使用 hash 确保同一工作区的实例路径唯一且稳定
+        return path.join(jdtlsCache, `jdtls-${baseName}-${workspaceHash}`);
+    }
+
     async start(
         jdtlsPath: string, // 可以是 bin/jdtls.bat 也可以是安装根目录
         workspacePath: string
@@ -97,8 +119,9 @@ export class JavaLanguageServer {
         // 3. 准备 JDT.LS 必需的文件路径
         const jarPath = this.findEquinoxLauncher(jdtlsHome);
         const configPath = this.getConfigDir(jdtlsHome);
-        // 数据目录
-        const dataDir = path.join(workspacePath, '.jdtls_data');
+
+        // 动态计算数据目录，参考 jdtls.py
+        const dataDir = this.getDataDir(workspacePath);
         if (!fs.existsSync(dataDir)) {
             fs.mkdirSync(dataDir, { recursive: true });
         }
@@ -125,6 +148,7 @@ export class JavaLanguageServer {
         ];
 
         console.error(`[STEP 1] Launching JDT.LS with direct Java and clean environment...`);
+        console.error(`[STEP 1] Data Directory: ${dataDir}`);
 
         // 在 Windows 上，即使直接调用 exe，使用 shell: true 也能更好地处理带空格的路径
         this.process = spawn(javaExec, args, {

@@ -39,10 +39,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                         },
                         workspacePath: {
                             type: "string",
-                            description: "Path to the workspace root",
+                            description: "Path to the workspace root (default: current directory)",
                         },
                     },
-                    required: ["jdtlsScriptPath", "workspacePath"],
+                    required: ["jdtlsScriptPath"],
                 },
             },
             {
@@ -57,10 +57,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                         },
                         workspacePath: {
                             type: "string",
-                            description: "Path to the workspace root",
+                            description: "Path to the workspace root (default: current directory)",
                         },
                     },
-                    required: ["jdtlsScriptPath", "workspacePath"],
+                    required: ["jdtlsScriptPath"],
                 },
             },
             {
@@ -158,18 +158,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         switch (name) {
             case "java_start": {
                 const { jdtlsScriptPath, workspacePath } = args as any;
+                const finalWorkspacePath = workspacePath || process.cwd();
                 if (javaServer.isRunning()) {
                     await javaServer.stop();
                 }
-                await javaServer.start(jdtlsScriptPath, workspacePath);
+                await javaServer.start(jdtlsScriptPath, finalWorkspacePath);
                 return {
                     content: [{ type: "text", text: "Java Language Server started successfully." }],
                 };
             }
             case "java_restart": {
                 const { jdtlsScriptPath, workspacePath } = args as any;
+                const finalWorkspacePath = workspacePath || process.cwd();
                 await javaServer.stop();
-                await javaServer.start(jdtlsScriptPath, workspacePath);
+                await javaServer.start(jdtlsScriptPath, finalWorkspacePath);
                 return {
                     content: [{ type: "text", text: "Java Language Server restarted successfully." }],
                 };
@@ -226,16 +228,17 @@ async function run() {
     console.error(`JDTLS_SCRIPT_PATH: ${jdtlsScriptPath || 'undefined'}`);
     console.error(`JAVA_WORKSPACE_PATH: ${workspacePath || 'undefined'}`);
 
-    if (jdtlsScriptPath && workspacePath) {
+    if (jdtlsScriptPath) {
+        const finalWorkspacePath = workspacePath || process.cwd();
         try {
-            console.error("Auto-starting JDT.LS...");
-            await javaServer.start(jdtlsScriptPath, workspacePath);
+            console.error(`Auto-starting JDT.LS with workspace: ${finalWorkspacePath}...`);
+            await javaServer.start(jdtlsScriptPath, finalWorkspacePath);
             console.error("JDT.LS auto-started successfully.");
         } catch (e: any) {
             console.error(`Failed to auto-start JDT.LS: ${e.message}`);
         }
     } else {
-        console.error("JDT.LS auto-start skipped: Missing environment variables (JDTLS_SCRIPT_PATH, JAVA_WORKSPACE_PATH).");
+        console.error("JDT.LS auto-start skipped: Missing JDTLS_SCRIPT_PATH environment variable.");
     }
 }
 
