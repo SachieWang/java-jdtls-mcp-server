@@ -33,16 +33,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 inputSchema: {
                     type: "object",
                     properties: {
-                        jdtlsScriptPath: {
+                        jdtlsHome: {
                             type: "string",
-                            description: "Path to JDT.LS wrapper script (e.g. bin/jdtls or bin/jdtls.bat)",
+                            description: "Path to JDT.LS installation root directory",
                         },
                         workspacePath: {
                             type: "string",
                             description: "Path to the workspace root (default: current directory)",
                         },
                     },
-                    required: ["jdtlsScriptPath"],
+                    required: ["jdtlsHome"],
                 },
             },
             {
@@ -51,16 +51,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                 inputSchema: {
                     type: "object",
                     properties: {
-                        jdtlsScriptPath: {
+                        jdtlsHome: {
                             type: "string",
-                            description: "Path to JDT.LS wrapper script",
+                            description: "Path to JDT.LS installation root directory",
                         },
                         workspacePath: {
                             type: "string",
                             description: "Path to the workspace root (default: current directory)",
                         },
                     },
-                    required: ["jdtlsScriptPath"],
+                    required: ["jdtlsHome"],
                 },
             },
             {
@@ -157,21 +157,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
         switch (name) {
             case "java_start": {
-                const { jdtlsScriptPath, workspacePath } = args as any;
+                const { jdtlsHome, workspacePath } = args as any;
                 const finalWorkspacePath = workspacePath || process.cwd();
                 if (javaServer.isRunning()) {
                     await javaServer.stop();
                 }
-                await javaServer.start(jdtlsScriptPath, finalWorkspacePath);
+                await javaServer.start(jdtlsHome, finalWorkspacePath);
                 return {
                     content: [{ type: "text", text: "Java Language Server started successfully." }],
                 };
             }
             case "java_restart": {
-                const { jdtlsScriptPath, workspacePath } = args as any;
+                const { jdtlsHome, workspacePath } = args as any;
                 const finalWorkspacePath = workspacePath || process.cwd();
                 await javaServer.stop();
-                await javaServer.start(jdtlsScriptPath, finalWorkspacePath);
+                await javaServer.start(jdtlsHome, finalWorkspacePath);
                 return {
                     content: [{ type: "text", text: "Java Language Server restarted successfully." }],
                 };
@@ -221,24 +221,24 @@ async function run() {
     console.error("Java MCP Server running on stdio");
 
     // Auto-start if env vars are present
-    const jdtlsScriptPath = process.env.JDTLS_SCRIPT_PATH;
+    const jdtlsHome = process.env.JDTLS_HOME;
     const workspacePath = process.env.JAVA_WORKSPACE_PATH;
 
     console.error(`Checking auto-start env vars...`);
-    console.error(`JDTLS_SCRIPT_PATH: ${jdtlsScriptPath || 'undefined'}`);
+    console.error(`JDTLS_HOME: ${jdtlsHome || 'undefined'}`);
     console.error(`JAVA_WORKSPACE_PATH: ${workspacePath || 'undefined'}`);
 
-    if (jdtlsScriptPath) {
+    if (jdtlsHome) {
         const finalWorkspacePath = workspacePath || process.cwd();
         try {
             console.error(`Auto-starting JDT.LS with workspace: ${finalWorkspacePath}...`);
-            await javaServer.start(jdtlsScriptPath, finalWorkspacePath);
+            await javaServer.start(jdtlsHome, finalWorkspacePath);
             console.error("JDT.LS auto-started successfully.");
         } catch (e: any) {
             console.error(`Failed to auto-start JDT.LS: ${e.message}`);
         }
     } else {
-        console.error("JDT.LS auto-start skipped: Missing JDTLS_SCRIPT_PATH environment variable.");
+        console.error("JDT.LS auto-start skipped: Missing JDTLS_HOME environment variable.");
     }
 }
 

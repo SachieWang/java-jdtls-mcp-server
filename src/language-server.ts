@@ -82,7 +82,7 @@ export class JavaLanguageServer {
     }
 
     async start(
-        jdtlsPath: string, // 可以是 bin/jdtls.bat 也可以是安装根目录
+        jdtlsHomeInput: string, // JDT.LS 安装根目录 (或 bin/jdtls 路径)
         workspacePath: string
     ): Promise<void> {
         if (this.connection) {
@@ -90,9 +90,12 @@ export class JavaLanguageServer {
         }
 
         // 1. 推断 JDT.LS 的安装根目录
-        let jdtlsHome = jdtlsPath;
-        if (jdtlsPath.endsWith('.bat') || jdtlsPath.endsWith('jdtls')) {
-            jdtlsHome = path.dirname(path.dirname(jdtlsPath));
+        let jdtlsHome = jdtlsHomeInput;
+        // 兼容性处理：如果传入的是 bin/jdtls 或 bin/jdtls.bat
+        if (jdtlsHomeInput.endsWith('.bat') || jdtlsHomeInput.endsWith('jdtls') || jdtlsHomeInput.includes('bin')) {
+            if (fs.statSync(jdtlsHomeInput).isFile()) {
+                jdtlsHome = path.dirname(path.dirname(jdtlsHomeInput));
+            }
         }
 
         // 2. 确定 Java 可执行文件路径

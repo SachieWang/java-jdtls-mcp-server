@@ -1,38 +1,41 @@
 # Java MCP Server
 
-This is a Model Context Protocol (MCP) server that provides Java language features by interfacing with the Eclipse JDT.LS (Java Language Server).
+[English](./README.md) | [简体中文](./docs/README_zh.md)
 
-## Features
+This is a Model Context Protocol (MCP) server that provides professional Java language features by interfacing with the Eclipse JDT.LS (Java Language Server). It acts as a bridge, allowing AI agents like Claude Code, Gemini, and other MCP clients to understand and navigate Java codebases with high precision.
 
-- **MCP Support**: Works with Claude Code, Gemini, and other MCP clients.
-- **LSP Client**: Acts as a client to JDT.LS.
-- **Auto-start**: Automatically starts JDT.LS if environment variables are configured.
-- **Tools**:
-  - `java_start`: Connect to JDT.LS (or restart if running).
-  - `java_restart`: Restart JDT.LS.
-  - `java_open_file`: Open a file in the server.
-  - `java_get_definition`: Go to definition.
-  - `java_get_references`: Find references.
-  - `java_get_hover`: Get hover documentation.
+## 🌟 Key Features
 
-## Prerequisites
+- **Native JDT.LS Launch**: Directly launches the Java Language Server via JVM, bypassing fragile shell wrappers (`.bat` or `.py`) for better stability.
+- **Environment Isolation**: Automatically clears conflicting environment variables (like `PORT`) often injected by MCP Inspector, ensuring reliable StdIO communication.
+- **Instance Isolation**: Uses workspace path hashing to create unique, isolated data directories in the system cache, preventing workspace locking issues.
+- **Smart Pathing**: 
+  - Automatically identifies JDT.LS home from the provided path.
+  - Automatically locates the Equinox launcher and OS-specific configuration.
+  - Automatically falls back to the current working directory (CWD) if no workspace path is provided.
+- **Full LSP Capabilities**: Supports symbol definitions, references, hover documentation, and file synchronization.
+- **Cross-Platform**: Fully compatible with Windows, macOS, and Linux.
 
-- Node.js installed.
-- Java Development Kit (JDK) installed (Java 17+ recommended).
-- **Eclipse JDT.LS** installed.
+## 🛠️ Prerequisites
 
-## Installation
+- **Node.js**: v18.0.0 or higher.
+- **Java Development Kit (JDK)**: Java 17 or higher (Java 21+ recommended).
+- **Eclipse JDT.LS**: An installation of the [Eclipse JDT.LS](https://download.eclipse.org/jdtls/snapshots/?v=latest).
+
+## 🚀 Installation
 
 ```bash
+git clone <repository-url>
+cd java-jdtls-mcp-server
 npm install
 npm run build
 ```
 
-## Usage
+## 📖 Usage
 
-### Configuring in Claude Code / MCP Client
+### MCP Client Configuration
 
-Add the following to your MCP configuration. You can configure environment variables to auto-start JDT.LS.
+Add the following to your MCP configuration file (e.g., `claude_desktop_config.json`):
 
 ```json
 {
@@ -41,44 +44,45 @@ Add the following to your MCP configuration. You can configure environment varia
       "command": "node",
       "args": ["/path/to/java-mcp-server/dist/index.js"],
       "env": {
-        "JDTLS_SCRIPT_PATH": "/path/to/jdtls/bin/jdtls",
+        "JDTLS_HOME": "/path/to/jdtls-installation-root",
         "JAVA_WORKSPACE_PATH": "/path/to/your/project/root",
-        "JAVA_HOME": "/path/to/jdk" 
+        "JAVA_HOME": "/path/to/jdk"
       }
     }
   }
 }
 ```
 
-*Note: `JAVA_HOME` is optional if it's already set in your system environment, but JDT.LS requires it.*
+### Environment Variables
 
-### Starting the Server
+| Variable | Description | Required | Default |
+| :--- | :--- | :--- | :--- |
+| `JDTLS_HOME` | Path to JDT.LS installation root directory | **Yes** (for auto-start) | - |
+| `JAVA_WORKSPACE_PATH` | Root path of your Java project | No | Current Working Directory |
+| `JAVA_HOME` | Path to your JDK installation | No | System `JAVA_HOME` |
 
-If you configured the environment variables (`JDTLS_SCRIPT_PATH` and `JAVA_WORKSPACE_PATH`), the server will start JDT.LS automatically when the MCP server initializes.
+## 🧰 Available Tools
 
-If you need to start it manually or restart it with different parameters, use `java_start`.
+| Tool Name | Description | Key Parameters |
+| :--- | :--- | :--- |
+| `java_start` | Initializes JDT.LS. Restarts if already running. | `jdtlsHome`, `workspacePath` (optional) |
+| `java_restart` | Forces a restart of the JDT.LS process. | `jdtlsHome`, `workspacePath` (optional) |
+| `java_open_file` | Synchronizes file content to the server. | `filePath`, `content` |
+| `java_get_definition` | Retrieves the definition location for a symbol. | `filePath`, `line`, `character` |
+| `java_get_references` | Finds all references for a symbol. | `filePath`, `line`, `character` |
+| `java_get_hover` | Gets type info and documentation for a symbol. | `filePath`, `line`, `character` |
 
-**Parameters for `java_start`:**
-- `jdtlsScriptPath`: Path to the JDT.LS wrapper script (e.g., `bin/jdtls` or `bin/jdtls.bat`).
-- `workspacePath`: Path to your Java project root.
+## 🔍 Technical Details
 
-### Example Workflow
+### Instance Data Storage
+The server stores JDT.LS internal data in a hashed directory within the OS's standard cache folder:
+- **Windows**: `%APPDATA%\jdtls\jdtls-<projectName>-<hash>`
+- **macOS**: `~/Library/Caches/jdtls/jdtls-<projectName>-<hash>`
+- **Linux**: `~/.cache/jdtls/jdtls-<projectName>-<hash>`
 
-1.  **Start JDT.LS** (if not auto-started):
-    Call `java_start` with:
-    ```json
-    {
-      "jdtlsScriptPath": "C:/tools/jdtls/bin/jdtls.bat",
-      "workspacePath": "C:/Projects/MyJavaProject"
-    }
-    ```
+### Encoding
+Forces `UTF-8` encoding via `JAVA_TOOL_OPTIONS` for cross-platform consistency of logs and source code.
 
-2.  **Open a File**:
-    Call `java_open_file` with the file path and content.
+## 📄 License
 
-3.  **Get Definition**:
-    Call `java_get_definition` with file path, line, and character.
-
-## License
-
-ISC
+This project is licensed under the ISC License.
