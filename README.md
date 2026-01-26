@@ -24,6 +24,23 @@ This is a Model Context Protocol (MCP) server that provides professional Java la
 
 ## 🚀 Installation
 
+### Option A: Install via Git (Recommended)
+
+The most elegant way to install without a public npm repository:
+
+```bash
+# Install globally (provides 'java-mcp-server' command)
+npm install -g git+https://git.wind.com.cn/zxwang.sachiew/java-jdtls-mcp-server.git
+```
+
+### Option B: Run with npx
+
+```bash
+npx git+https://git.wind.com.cn/zxwang.sachiew/java-jdtls-mcp-server.git
+```
+
+### Option C: Source-based Installation
+
 ```bash
 git clone <repository-url>
 cd java-jdtls-mcp-server

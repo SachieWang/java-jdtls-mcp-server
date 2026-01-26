@@ -20,7 +20,28 @@
 - **Java Development Kit (JDK)**: Java 17 或更高版本（推荐使用 Java 21+）。
 - **Eclipse JDT.LS**: 已安装 [Eclipse JDT.LS](https://download.eclipse.org/jdtls/snapshots/?v=latest)。
 
-## 🚀 安装步骤
+## 🚀 安装方法
+
+### 方式 A：通过 Git 直接安装（推荐）
+
+这是最优雅的方式，无需手动下载源码，且安装后可直接在命令行使用：
+
+```bash
+# 全局安装 (安装后可直接执行 java-mcp-server 命令)
+npm install -g git+https://git.wind.com.cn/zxwang.sachiew/java-jdtls-mcp-server.git
+```
+
+### 方式 B：使用 npx 直接运行
+
+如果你不想安装到全局，也可以直接运行：
+
+```bash
+npx git+https://git.wind.com.cn/zxwang.sachiew/java-jdtls-mcp-server.git
+```
+
+### 方式 C：源码编译安装
+
+如果你需要进行二次开发，可以使用此方式：
 
 ```bash
 git clone <repository-url>
