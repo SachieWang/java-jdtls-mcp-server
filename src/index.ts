@@ -41,6 +41,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                             type: "string",
                             description: "Path to the workspace root (default: current directory)",
                         },
+                        javaHome: {
+                            type: "string",
+                            description: "Path to Java Home (overrides JAVA_HOME env var)",
+                        },
                     },
                     required: ["jdtlsHome"],
                 },
@@ -58,6 +62,10 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                         workspacePath: {
                             type: "string",
                             description: "Path to the workspace root (default: current directory)",
+                        },
+                        javaHome: {
+                            type: "string",
+                            description: "Path to Java Home (overrides JAVA_HOME env var)",
                         },
                     },
                     required: ["jdtlsHome"],
@@ -175,6 +183,34 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     required: ["projectPath"],
                 },
             },
+            {
+                name: "java_search_symbols",
+                description: "Search for symbols (classes, methods, fields) across the entire workspace by name.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        query: {
+                            type: "string",
+                            description: "The symbol name to search for (e.g., 'UserService')",
+                        },
+                    },
+                    required: ["query"],
+                },
+            },
+            {
+                name: "java_get_file_symbols",
+                description: "Get all symbols (classes, methods, fields) defined in a specific file.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        filePath: {
+                            type: "string",
+                            description: "Absolute path to the Java file",
+                        },
+                    },
+                    required: ["filePath"],
+                },
+            },
         ],
     };
 });
@@ -185,21 +221,21 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
         switch (name) {
             case "java_start": {
-                const { jdtlsHome, workspacePath } = args as any;
+                const { jdtlsHome, workspacePath, javaHome } = args as any;
                 const finalWorkspacePath = workspacePath || process.cwd();
                 if (javaServer.isRunning()) {
                     await javaServer.stop();
                 }
-                await javaServer.start(jdtlsHome, finalWorkspacePath);
+                await javaServer.start(jdtlsHome, finalWorkspacePath, javaHome);
                 return {
                     content: [{ type: "text", text: "Java Language Server started successfully." }],
                 };
             }
             case "java_restart": {
-                const { jdtlsHome, workspacePath } = args as any;
+                const { jdtlsHome, workspacePath, javaHome } = args as any;
                 const finalWorkspacePath = workspacePath || process.cwd();
                 await javaServer.stop();
-                await javaServer.start(jdtlsHome, finalWorkspacePath);
+                await javaServer.start(jdtlsHome, finalWorkspacePath, javaHome);
                 return {
                     content: [{ type: "text", text: "Java Language Server restarted successfully." }],
                 };
@@ -246,6 +282,20 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                     content: [{ type: "text", text: `Project loaded: ${projectPath}` }],
                 };
             }
+            case "java_search_symbols": {
+                const { query } = args as any;
+                const result = await javaServer.searchSymbols(query);
+                return {
+                    content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                };
+            }
+            case "java_get_file_symbols": {
+                const { filePath } = args as any;
+                const result = await javaServer.getDocumentSymbols(filePath);
+                return {
+                    content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                };
+            }
             default:
                 throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
         }
@@ -265,16 +315,18 @@ async function run() {
     // Auto-start if env vars are present (Lazy / Non-blocking)
     const jdtlsHome = process.env.JDTLS_HOME;
     const workspacePath = process.env.JAVA_WORKSPACE_PATH;
+    const javaHome = process.env.JDTLS_JAVA_HOME; // 支持 auto-start 时也使用专用环境变量
 
     console.error(`Checking auto-start env vars...`);
     console.error(`JDTLS_HOME: ${jdtlsHome || 'undefined'}`);
     console.error(`JAVA_WORKSPACE_PATH: ${workspacePath || 'undefined'}`);
+    console.error(`JDTLS_JAVA_HOME: ${javaHome || 'undefined'}`);
 
     if (jdtlsHome) {
         const finalWorkspacePath = workspacePath || process.cwd();
         // Fire and forget - do NOT await this.
         // If it fails, we want the MCP server to stay alive so the agent can debug it.
-        javaServer.start(jdtlsHome, finalWorkspacePath)
+        javaServer.start(jdtlsHome, finalWorkspacePath, javaHome)
             .then(() => console.error("JDT.LS auto-started successfully."))
             .catch((e: any) => console.error(`[WARNING] Failed to auto-start JDT.LS: ${e.message}`));
     } else {

@@ -10,24 +10,30 @@ description: Navigate Java projects, find definitions, and implementation detail
 This skill enables the agent to navigate a Java project, understanding its structure, symbols, and dependencies. It is essential for any task involving reading or modifying Java code.
 
 ## Tools
-- `java_open_file`: Synchronize file content with the server. **MUST** be called before other navigation commands on a file.
-- `java_get_definition`: Find where a symbol is defined.
-- `java_get_references`: Find where a symbol is used.
-- `java_get_hover`: Get Javadocs and type signatures.
+- `java_search_symbols`: Search for symbols by name (Class, Method) across the workspace. **Preferred for natural language requests.**
+- `java_get_file_symbols`: List all symbols in a specific file. Useful for exploring a file's structure.
+- `java_get_definition`: Find where a symbol is defined. Requires coordinates.
+- `java_get_references`: Find where a symbol is used. Requires coordinates.
+- `java_get_hover`: Get Javadocs and signatures. Requires coordinates.
+- `java_open_file`: ONLY needed if the file on disk is not up-to-date or you are making edits.
 
 ## Workflow
 
-### 1. Understanding a File
-When you need to understand a specific file or a symbol within it:
+### 1. Finding a Symbol (Natural Language)
+When a user asks "Where is the `UserService` class?" or "Find the `save` method":
 
-1.  **Sync**: Call `java_open_file` first to ensure the server sees the latest content.
+1.  **Search**: Call `java_search_symbols` with the name.
     ```json
-    { "filePath": "/abs/path/to/File.java", "content": "..." }
+    { "query": "UserService" }
     ```
-2.  **Inspect**: Only *after* syncing, usage hover to understand complex types or methods.
-    ```json
-    { "filePath": "/..", "line": 10, "character": 5 }
-    ```
+2.  **Locate**: Use the returned URI and range to find the file and coordinates.
+3.  **Inspect**: Call `java_get_hover` or `java_get_definition` at those coordinates if you need more detail.
+
+### 2. Understanding a File Structure
+Instead of reading the whole file:
+1.  **List Symbols**: Call `java_get_file_symbols`.
+2.  **Summary**: Review the list of methods and classes to understand what the file does.
+3.  **Read Selective**: Read only the relevant line ranges if needed.
 
 ### 2. Following Dependencies (Go to Definition)
 When you see a class usage (e.g., `UserService service`) and need to see its implementation:

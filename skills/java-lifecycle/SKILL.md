@@ -20,12 +20,16 @@ When the session begins, or if you receive "Server not started" errors:
 
 1.  **Check Environment**:
     - Try to find `JDTLS_HOME` in the environment.
-    - If it's missing, **STOP** and ask the user: "I couldn't find the JDTLS installation path. Could you please provide the absolute path to your JDT.LS root directory?"
-2.  **Start**: Once you have the path (either from environment or user), call `java_start`.
+    - Optionally check for `JDTLS_JAVA_HOME` if a specific Java version is needed that differs from the system default.
+    - If `JDTLS_HOME` is missing, **STOP** and ask the user properly.
+2.  **Start**: Call `java_start`. You can optionally provide `javaHome` if the user specifies a custom JDK path or if `JDTLS_JAVA_HOME` was found.
     ```json
-    { "jdtlsHome": "/path/to/jdtls" }
+    { 
+      "jdtlsHome": "/path/to/jdtls",
+      "javaHome": "/path/to/jdk-17" 
+    }
     ```
-    *Note: If the user provides the path, remember it for the duration of the session.*
+    *Note: `javaHome` takes precedence over `JDTLS_JAVA_HOME` and system `JAVA_HOME`. Use it if you need to enforce a specific runtime.*
 
 ### 2. Recovering from Stale State
 If the server seems unresponsive or symbol lookups are consistently failing:

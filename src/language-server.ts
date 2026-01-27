@@ -84,7 +84,8 @@ export class JavaLanguageServer {
 
     async start(
         jdtlsHomeInput: string, // JDT.LS 安装根目录 (或 bin/jdtls 路径)
-        workspacePath: string
+        workspacePath: string,
+        javaHomeInput?: string // 可选：显式指定 Java Home
     ): Promise<void> {
         if (this.connection) {
             return;
@@ -102,13 +103,18 @@ export class JavaLanguageServer {
             }
         }
 
-        // 2. 确定 Java 可执行文件路径
+        // 2. 确定 Java Home 和 可执行文件路径
+        // 优先级: 参数 > JDTLS_JAVA_HOME > JAVA_HOME
+        let javaHome = javaHomeInput || process.env.JDTLS_JAVA_HOME || process.env.JAVA_HOME;
         let javaExec = 'java';
-        if (process.env.JAVA_HOME) {
+
+        if (javaHome) {
             const ext = process.platform === 'win32' ? '.exe' : '';
-            const testPath = path.join(process.env.JAVA_HOME, 'bin', `java${ext}`);
+            const testPath = path.join(javaHome, 'bin', `java${ext}`);
             if (fs.existsSync(testPath)) {
                 javaExec = testPath;
+            } else {
+                console.error(`[WARNING] 指定的 JAVA_HOME 中未找到 java 可执行文件: ${testPath}，尝试使用系统默认 java`);
             }
         }
 
@@ -120,6 +126,11 @@ export class JavaLanguageServer {
         // 因为 MCP Inspector 会设置 PORT 环境变量，这会误导 JDT.LS 切换到 Socket 模式
         delete cleanEnv.PORT;
         delete cleanEnv.CLIENT_PORT;
+
+        // 显式设置 JAVA_HOME，防止 JDT.LS 脚本内部再次读取系统环境变量
+        if (javaHome) {
+            cleanEnv.JAVA_HOME = javaHome;
+        }
         // 确保编码正确
         cleanEnv.JAVA_TOOL_OPTIONS = (cleanEnv.JAVA_TOOL_OPTIONS || '') + ' -Dfile.encoding=UTF-8';
 
@@ -357,6 +368,19 @@ export class JavaLanguageServer {
                 ],
                 removed: []
             }
+        });
+    }
+
+    async searchSymbols(query: string) {
+        if (!this.connection) throw new Error('Server not started');
+        return this.connection.sendRequest('workspace/symbol', { query });
+    }
+
+    async getDocumentSymbols(filePath: string) {
+        if (!this.connection) throw new Error('Server not started');
+        const uri = pathToFileURL(filePath).toString();
+        return this.connection.sendRequest('textDocument/documentSymbol', {
+            textDocument: { uri }
         });
     }
 }

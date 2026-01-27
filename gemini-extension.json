@@ -19,8 +19,8 @@
         },
         {
             "name": "Java Home",
-            "description": "Absolute path to your JDK installation (optional, defaults to system JAVA_HOME).",
-            "envVar": "JAVA_HOME"
+            "description": "Absolute path to the JDK used to verify and launch JDT.LS (overrides system JAVA_HOME).",
+            "envVar": "JDTLS_JAVA_HOME"
         }
     ]
 }
