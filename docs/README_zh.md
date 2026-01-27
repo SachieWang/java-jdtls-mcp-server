@@ -52,6 +52,9 @@ gemini extensions install .
 | :--- | :--- | :--- | :--- |
 | `JDTLS_HOME` | JDT.LS 安装根目录路径 | **是** (用于自动启动) | - |
 | `JDTLS_JAVA_HOME` | JDT.LS 专用的 JDK 路径 (覆盖 `JAVA_HOME`) | 否 | 系统 `JAVA_HOME` |
+| `JDTLS_JAVA_RUNTIMES` | 多版本 Java 运行时配置 (JSON 数组) | 否 | - |
+| `JDTLS_MAVEN_USER_SETTINGS` | 自定义 Maven `settings.xml` 路径 | 否 | - |
+| `JDTLS_MAVEN_OFFLINE` | 是否开启 Maven 离线模式 (`true`/`false`) | 否 | `false` |
 | `JAVA_WORKSPACE_PATH` | Java 项目的根目录路径 | 否 | 当前工作目录 (CWD) |
 
 ### `.env` 文件示例
@@ -60,6 +63,10 @@ gemini extensions install .
 JDTLS_HOME=/path/to/jdtls
 JDTLS_JAVA_HOME=/path/to/jdk-21
 JAVA_WORKSPACE_PATH=/path/to/my-java-project
+# 支持多版本 JDK 自动映射与自定义 Maven
+JDTLS_JAVA_RUNTIMES=[{"name":"JavaSE-1.8","path":"/path/to/jdk-8"},{"name":"JavaSE-21","path":"/path/to/jdk-21","default":true}]
+JDTLS_MAVEN_USER_SETTINGS=/path/to/maven/conf/settings.xml
+JDTLS_MAVEN_OFFLINE=false
 ```
 
 ## 🧰 可用工具

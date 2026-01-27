@@ -5,12 +5,29 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as crypto from 'crypto';
+import { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
+
+export enum ServerState {
+    STOPPED = 'STOPPED',
+    STARTING = 'STARTING',
+    INITIALIZING = 'INITIALIZING',
+    READY = 'READY',
+    ERROR = 'ERROR'
+}
+
+export interface MavenConfig {
+    userSettings?: string;
+    globalSettings?: string;
+    offline?: boolean;
+}
 
 export class JavaLanguageServer {
     private process: ChildProcess | null = null;
     private connection: rpc.MessageConnection | null = null;
     private capabilities: any = null;
     private diagnostics: Map<string, any[]> = new Map();
+    private state: ServerState = ServerState.STOPPED;
+    private lastError: string | null = null;
 
     constructor() { }
 
@@ -83,13 +100,18 @@ export class JavaLanguageServer {
     }
 
     async start(
-        jdtlsHomeInput: string, // JDT.LS 安装根目录 (或 bin/jdtls 路径)
+        jdtlsHomeInput: string,
         workspacePath: string,
-        javaHomeInput?: string // 可选：显式指定 Java Home
+        javaHomeInput?: string,
+        javaRuntimes?: any[],
+        mavenConfig?: MavenConfig
     ): Promise<void> {
-        if (this.connection) {
+        if (this.state !== ServerState.STOPPED && this.state !== ServerState.ERROR) {
             return;
         }
+
+        this.state = ServerState.STARTING;
+        this.lastError = null;
 
         // 1. 推断 JDT.LS 的安装根目录
         if (!jdtlsHomeInput) {
@@ -154,6 +176,7 @@ export class JavaLanguageServer {
             `-Dosgi.sharedConfiguration.area=${this.toForwardSlashes(configPath)}`,
             '-Dosgi.sharedConfiguration.area.readOnly=true',
             '-Dosgi.configuration.cascaded=true',
+            '-Dlog.level=ALL',
             '-Xms1G',
             '-Xmx1G', // 调低到 1G 与 python 脚本一致
             '--add-modules=ALL-SYSTEM',
@@ -176,14 +199,24 @@ export class JavaLanguageServer {
             stdio: ['pipe', 'pipe', 'pipe']
         });
 
-        this.process.on('error', (err) => {
-            console.error(`[JDT.LS Process Error] ${err.message}`);
+        const currentProcess = this.process;
+        currentProcess.on('error', (err) => {
+            if (this.process === currentProcess) {
+                console.error(`[JDT.LS Process Error] ${err.message}`);
+                this.state = ServerState.ERROR;
+                this.lastError = err.message;
+            }
         });
 
-        this.process.on('exit', (code, signal) => {
+        currentProcess.on('exit', (code, signal) => {
             console.error(`[JDT.LS Process Exit] Code: ${code}, Signal: ${signal}`);
-            this.connection = null;
-            this.process = null;
+            // 仅当退出的进程是当前活跃进程时，才清理连接状态
+            if (this.process === currentProcess) {
+                this.connection = null;
+                this.process = null;
+                this.capabilities = null;
+                this.state = ServerState.STOPPED;
+            }
         });
 
         this.process.stderr?.on('data', (data) => {
@@ -212,13 +245,20 @@ export class JavaLanguageServer {
 
         this.connection.onNotification('textDocument/publishDiagnostics', (params) => {
             const uri = params.uri;
-            // Clean up URI to be a file path for easier mapping if needed, 
-            // but keeping URI as key is safer.
-            // We can normalize when retrieving.
             this.diagnostics.set(uri, params.diagnostics);
         });
 
-        console.error('[STEP 3] Sending "initialize" request...');
+        // 5. 异步初始化过程 (不阻塞工具调用)
+        this.state = ServerState.INITIALIZING;
+        this.initializeAsync(workspacePath, javaRuntimes, mavenConfig).catch(err => {
+            console.error(`[CRITICAL] Background initialization failed: ${err.message}`);
+        });
+    }
+
+    private async initializeAsync(workspacePath: string, javaRuntimes?: any[], mavenConfig?: MavenConfig) {
+        if (!this.connection) return;
+
+        console.error('[STEP 3] Sending "initialize" request (Async)...');
         try {
             const initResult = await this.connection.sendRequest('initialize', {
                 processId: process.pid,
@@ -228,7 +268,13 @@ export class JavaLanguageServer {
                         configuration: true,
                         didChangeConfiguration: { dynamicRegistration: true },
                         workspaceFolders: true,
-                        executeCommand: { dynamicRegistration: true }
+                        executeCommand: { dynamicRegistration: true },
+                        symbol: {
+                            dynamicRegistration: true,
+                            symbolKind: {
+                                valueSet: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+                            }
+                        }
                     },
                     textDocument: {
                         synchronization: {
@@ -261,7 +307,27 @@ export class JavaLanguageServer {
                 initializationOptions: {
                     settings: {
                         java: {
-                            import: { gradle: { enabled: false }, maven: { enabled: true } }
+                            import: {
+                                gradle: { enabled: false },
+                                maven: {
+                                    enabled: true,
+                                    offline: mavenConfig?.offline ?? false
+                                }
+                            },
+                            configuration: {
+                                runtimes: javaRuntimes || [],
+                                maven: {
+                                    userSettings: mavenConfig?.userSettings,
+                                    globalSettings: mavenConfig?.globalSettings,
+                                }
+                            },
+                            references: {
+                                includeAccessors: true,
+                                includeDecompiledSources: true
+                            },
+                            symbols: {
+                                includeSourceMethodDeclarations: true
+                            }
                         }
                     }
                 },
@@ -270,52 +336,105 @@ export class JavaLanguageServer {
                         name: 'workspace',
                         uri: pathToFileURL(workspacePath).toString()
                     }
-                ]
+                ],
+                extendedClientCapabilities: {
+                    progressReportsSupported: true,
+                    classFileContentsSupport: true,
+                    overrideMethodsPromptSupport: true,
+                    hashCodeEqualsPromptSupport: true,
+                    advancedOrganizeImportsSupport: true,
+                    generateConstructorsPromptSupport: true,
+                    generateDelegateMethodsPromptSupport: true,
+                    advancedExtractRefactoringSupport: true,
+                    moveRefactoringSupport: true,
+                    clientHoverProvider: true,
+                    clientDocumentSymbolProvider: true,
+                    gradleChecksumWrapperPromptSupport: true,
+                    resolveAdditionalTextEditsSupport: true,
+                    advancedIntroduceParameterRefactoringSupport: true
+                }
             });
 
             this.capabilities = initResult;
+            console.error('[DEBUG] the server capabilities:', this.capabilities);
             console.error('[STEP 4] "initialize" finished.');
             await this.connection.sendNotification('initialized', {});
+            this.state = ServerState.READY;
             console.error('JDT.LS is ready.');
         } catch (error: any) {
             console.error(`[CRITICAL ERROR] Initialization failed: ${error.message}`);
-            this.connection = null;
-            throw error;
+            this.state = ServerState.ERROR;
+            this.lastError = error.message;
         }
     }
 
     isRunning(): boolean {
-        return !!this.connection;
+        // 对于启动逻辑来说，只有处于 STOPPED 或 ERROR 状态才算“未运行”
+        return this.state !== ServerState.STOPPED && this.state !== ServerState.ERROR;
+    }
+
+    getState(): ServerState {
+        return this.state;
+    }
+
+    ensureReady() {
+        if (this.state === ServerState.STOPPED) {
+            throw new McpError(ErrorCode.InvalidRequest, 'Java Language Server not started. Please call java_start first.');
+        }
+        if (this.state === ServerState.STARTING || this.state === ServerState.INITIALIZING) {
+            throw new McpError(ErrorCode.InternalError, 'Java Language Server is still initializing. Please wait.');
+        }
+        if (this.state === ServerState.ERROR) {
+            throw new McpError(ErrorCode.InternalError, `Java Language Server failed to start: ${this.lastError}`);
+        }
+        if (!this.connection) {
+            throw new McpError(ErrorCode.InternalError, 'Server connection lost. Try java_restart.');
+        }
     }
 
     async stop() {
         if (this.connection) {
             try {
-                await this.connection.sendRequest('shutdown');
+                // 尝试优雅关闭，但不强制等待成功
+                await Promise.race([
+                    this.connection.sendRequest('shutdown'),
+                    new Promise(resolve => setTimeout(resolve, 800))
+                ]).catch(() => { });
                 this.connection.sendNotification('exit');
             } catch (e) { }
-            this.connection.dispose();
+
+            try {
+                this.connection.dispose();
+            } catch (e) { }
             this.connection = null;
         }
+
         if (this.process) {
-            this.process.kill();
+            try {
+                this.process.removeAllListeners();
+                this.process.kill('SIGKILL'); // 确保物理销毁
+            } catch (e) { }
             this.process = null;
         }
+
+        this.capabilities = null;
+        this.diagnostics.clear(); // 清理旧的诊断信息
+        this.state = ServerState.STOPPED;
     }
 
     async getDefinition(filePath: string, line: number, character: number) {
-        if (!this.connection) throw new Error('Server not started');
+        this.ensureReady();
         const uri = pathToFileURL(filePath).toString();
-        return this.connection.sendRequest('textDocument/definition', {
+        return this.connection!.sendRequest('textDocument/definition', {
             textDocument: { uri },
             position: { line, character }
         });
     }
 
     async getReferences(filePath: string, line: number, character: number) {
-        if (!this.connection) throw new Error('Server not started');
+        this.ensureReady();
         const uri = pathToFileURL(filePath).toString();
-        return this.connection.sendRequest('textDocument/references', {
+        return this.connection!.sendRequest('textDocument/references', {
             textDocument: { uri },
             position: { line, character },
             context: { includeDeclaration: true }
@@ -323,18 +442,18 @@ export class JavaLanguageServer {
     }
 
     async getHover(filePath: string, line: number, character: number) {
-        if (!this.connection) throw new Error('Server not started');
+        this.ensureReady();
         const uri = pathToFileURL(filePath).toString();
-        return this.connection.sendRequest('textDocument/hover', {
+        return this.connection!.sendRequest('textDocument/hover', {
             textDocument: { uri },
             position: { line, character }
         });
     }
 
     async didOpen(filePath: string, content: string) {
-        if (!this.connection) throw new Error('Server not started');
+        this.ensureReady();
         const uri = pathToFileURL(filePath).toString();
-        return this.connection.sendNotification('textDocument/didOpen', {
+        return this.connection!.sendNotification('textDocument/didOpen', {
             textDocument: {
                 uri,
                 languageId: 'java',
@@ -345,20 +464,17 @@ export class JavaLanguageServer {
     }
 
     async getDiagnostics(filePath: string) {
-        // Normalize path to URI to match map keys
+        // 允许直接查询诊断，甚至在 READY 前（可能已经开始 publish 了）
         const uri = pathToFileURL(filePath).toString();
-
-        // Sometimes JDT.LS might use slightly different URI encoding, 
-        // we might need to be careful, but pathToFileURL is standard.
         return this.diagnostics.get(uri) || [];
     }
 
     async addWorkspaceFolder(folderPath: string) {
-        if (!this.connection) throw new Error('Server not started');
+        this.ensureReady();
         const uri = pathToFileURL(folderPath).toString();
         const baseName = path.basename(folderPath);
 
-        return this.connection.sendNotification('workspace/didChangeWorkspaceFolders', {
+        return this.connection!.sendNotification('workspace/didChangeWorkspaceFolders', {
             event: {
                 added: [
                     {
@@ -372,14 +488,14 @@ export class JavaLanguageServer {
     }
 
     async searchSymbols(query: string) {
-        if (!this.connection) throw new Error('Server not started');
-        return this.connection.sendRequest('workspace/symbol', { query });
+        this.ensureReady();
+        return this.connection!.sendRequest('workspace/symbol', { query });
     }
 
     async getDocumentSymbols(filePath: string) {
-        if (!this.connection) throw new Error('Server not started');
+        this.ensureReady();
         const uri = pathToFileURL(filePath).toString();
-        return this.connection.sendRequest('textDocument/documentSymbol', {
+        return this.connection!.sendRequest('textDocument/documentSymbol', {
             textDocument: { uri }
         });
     }

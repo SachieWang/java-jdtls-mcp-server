@@ -18,6 +18,15 @@ This skill enables the agent to navigate a Java project, understanding its struc
 - `java_open_file`: ONLY needed if the file on disk is not up-to-date or you are making edits.
 
 ## Workflow
+ 
+### 0. Project Overview & Structure Analysis
+When asked to "summarize the project" or "provide an overview":
+
+1.  **Load Project**: Call `java_load_maven_project` to index types across the whole codebase.
+2.  **Search Core Components**: Use `java_search_symbols` with broad queries like `Controller`, `Service`, or `Repository` to identify the functional layers.
+3.  **Inspect Key Files**: For identified core files, call `java_get_file_symbols` to see their structure.
+4.  **Extract Logic Summary**: Use `java_get_hover` on class definitions to understand their purpose from Javadocs.
+5.  **Selective Reading**: ONLY read specific code blocks if you need to understand a complex algorithm that symbols and hovers can't clarify.
 
 ### 1. Finding a Symbol (Natural Language)
 When a user asks "Where is the `UserService` class?" or "Find the `save` method":

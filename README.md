@@ -52,6 +52,9 @@ The server supports loading environment variables from a `.env` file located in 
 | :--- | :--- | :--- | :--- |
 | `JDTLS_HOME` | Path to JDT.LS installation root directory | **Yes** (for auto-start) | - |
 | `JDTLS_JAVA_HOME` | Dedicated JDK path for JDT.LS (Overrides `JAVA_HOME`) | No | System `JAVA_HOME` |
+| `JDTLS_JAVA_RUNTIMES` | JSON list of Java Runtimes for different project versions | No | - |
+| `JDTLS_MAVEN_USER_SETTINGS` | Path to custom Maven `settings.xml` | No | - |
+| `JDTLS_MAVEN_OFFLINE` | Enable Maven offline mode (`true`/`false`) | No | `false` |
 | `JAVA_WORKSPACE_PATH` | Root path of your Java project | No | Current Working Directory |
 
 ### Example `.env` file
@@ -60,6 +63,10 @@ The server supports loading environment variables from a `.env` file located in 
 JDTLS_HOME=/path/to/jdtls
 JDTLS_JAVA_HOME=/path/to/jdk-21
 JAVA_WORKSPACE_PATH=/path/to/my-java-project
+# Maven and JDK Runtimes
+JDTLS_JAVA_RUNTIMES=[{"name":"JavaSE-1.8","path":"/path/to/jdk-8"},{"name":"JavaSE-21","path":"/path/to/jdk-21","default":true}]
+JDTLS_MAVEN_USER_SETTINGS=/path/to/maven/conf/settings.xml
+JDTLS_MAVEN_OFFLINE=false
 ```
 
 ## 🧰 Available Tools

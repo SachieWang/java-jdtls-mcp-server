@@ -47,6 +47,27 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                             type: "string",
                             description: "Path to Java Home (overrides JAVA_HOME env var)",
                         },
+                        javaRuntimes: {
+                            type: "array",
+                            items: {
+                                type: "object",
+                                properties: {
+                                    name: { type: "string" },
+                                    path: { type: "string" },
+                                    default: { type: "boolean" }
+                                }
+                            },
+                            description: "List of Java Runtimes for different versions"
+                        },
+                        mavenConfig: {
+                            type: "object",
+                            properties: {
+                                userSettings: { type: "string" },
+                                globalSettings: { type: "string" },
+                                offline: { type: "boolean" }
+                            },
+                            description: "Custom Maven configuration"
+                        }
                     },
                     required: ["jdtlsHome"],
                 },
@@ -69,6 +90,27 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                             type: "string",
                             description: "Path to Java Home (overrides JAVA_HOME env var)",
                         },
+                        javaRuntimes: {
+                            type: "array",
+                            items: {
+                                type: "object",
+                                properties: {
+                                    name: { type: "string" },
+                                    path: { type: "string" },
+                                    default: { type: "boolean" }
+                                }
+                            },
+                            description: "List of Java Runtimes for different versions"
+                        },
+                        mavenConfig: {
+                            type: "object",
+                            properties: {
+                                userSettings: { type: "string" },
+                                globalSettings: { type: "string" },
+                                offline: { type: "boolean" }
+                            },
+                            description: "Custom Maven configuration"
+                        }
                     },
                     required: ["jdtlsHome"],
                 },
@@ -223,23 +265,34 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
         switch (name) {
             case "java_start": {
-                const { jdtlsHome, workspacePath, javaHome } = args as any;
+                const { jdtlsHome, workspacePath, javaHome, javaRuntimes, mavenConfig } = args as any;
                 const finalWorkspacePath = workspacePath || process.cwd();
-                if (javaServer.isRunning()) {
+                if (javaServer.getState() !== "STOPPED") {
                     await javaServer.stop();
                 }
-                await javaServer.start(jdtlsHome, finalWorkspacePath, javaHome);
+                const finalRuntimes = javaRuntimes ? normalizeRuntimes(javaRuntimes) : parseRuntimes(process.env.JDTLS_JAVA_RUNTIMES);
+                const finalMavenConfig = mavenConfig ? normalizeMavenConfig(mavenConfig) : getMavenConfigFromEnv();
+
+                // 异步启动，不 await
+                javaServer.start(jdtlsHome, finalWorkspacePath, javaHome, finalRuntimes, finalMavenConfig)
+                    .catch(e => console.error(`[ERROR] java_start: ${e.message}`));
+
                 return {
-                    content: [{ type: "text", text: "Java Language Server started successfully." }],
+                    content: [{ type: "text", text: "Java Language Server start initiated. It will initialize in the background." }],
                 };
             }
             case "java_restart": {
-                const { jdtlsHome, workspacePath, javaHome } = args as any;
+                const { jdtlsHome, workspacePath, javaHome, javaRuntimes, mavenConfig } = args as any;
                 const finalWorkspacePath = workspacePath || process.cwd();
                 await javaServer.stop();
-                await javaServer.start(jdtlsHome, finalWorkspacePath, javaHome);
+                const finalRuntimes = javaRuntimes ? normalizeRuntimes(javaRuntimes) : parseRuntimes(process.env.JDTLS_JAVA_RUNTIMES);
+                const finalMavenConfig = mavenConfig ? normalizeMavenConfig(mavenConfig) : getMavenConfigFromEnv();
+
+                javaServer.start(jdtlsHome, finalWorkspacePath, javaHome, finalRuntimes, finalMavenConfig)
+                    .catch(e => console.error(`[ERROR] java_restart: ${e.message}`));
+
                 return {
-                    content: [{ type: "text", text: "Java Language Server restarted successfully." }],
+                    content: [{ type: "text", text: "Java Language Server restart initiated. Background initialization started." }],
                 };
             }
             case "java_open_file": {
@@ -312,27 +365,61 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function run() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
+    // 强制所有日志到 stderr
+    console.log = console.error;
     console.error("Java MCP Server running on stdio");
 
-    // Auto-start if env vars are present (Lazy / Non-blocking)
     const jdtlsHome = process.env.JDTLS_HOME;
     const workspacePath = process.env.JAVA_WORKSPACE_PATH;
-    const javaHome = process.env.JDTLS_JAVA_HOME; // 支持 auto-start 时也使用专用环境变量
-
-    console.error(`Checking auto-start env vars...`);
-    console.error(`JDTLS_HOME: ${jdtlsHome || 'undefined'}`);
-    console.error(`JAVA_WORKSPACE_PATH: ${workspacePath || 'undefined'}`);
-    console.error(`JDTLS_JAVA_HOME: ${javaHome || 'undefined'}`);
+    const javaHome = process.env.JDTLS_JAVA_HOME;
+    const javaRuntimes = parseRuntimes(process.env.JDTLS_JAVA_RUNTIMES);
+    const mavenConfig = getMavenConfigFromEnv();
 
     if (jdtlsHome) {
         const finalWorkspacePath = workspacePath || process.cwd();
-        // Fire and forget - do NOT await this.
-        // If it fails, we want the MCP server to stay alive so the agent can debug it.
-        javaServer.start(jdtlsHome, finalWorkspacePath, javaHome)
-            .then(() => console.error("JDT.LS auto-started successfully."))
-            .catch((e: any) => console.error(`[WARNING] Failed to auto-start JDT.LS: ${e.message}`));
-    } else {
-        console.error("JDT.LS auto-start skipped: Missing JDTLS_HOME environment variable.");
+        javaServer.start(jdtlsHome, finalWorkspacePath, javaHome, javaRuntimes, mavenConfig)
+            .catch((e: any) => console.error(`[WARNING] Auto-start failed: ${e.message}`));
+    }
+}
+
+function normalizePath(p: string | undefined): string | undefined {
+    return p ? p.replace(/\\/g, '/') : undefined;
+}
+
+function normalizeRuntimes(runtimes: any[]): any[] {
+    return runtimes.map(rt => ({
+        ...rt,
+        path: normalizePath(rt.path)
+    }));
+}
+
+function normalizeMavenConfig(config: any): any {
+    return {
+        ...config,
+        userSettings: normalizePath(config.userSettings),
+        globalSettings: normalizePath(config.globalSettings)
+    };
+}
+
+function getMavenConfigFromEnv(): any {
+    return normalizeMavenConfig({
+        userSettings: process.env.JDTLS_MAVEN_USER_SETTINGS,
+        globalSettings: process.env.JDTLS_MAVEN_GLOBAL_SETTINGS,
+        offline: process.env.JDTLS_MAVEN_OFFLINE === 'true'
+    });
+}
+
+function parseRuntimes(envStr: string | undefined): any[] | undefined {
+    if (!envStr) return undefined;
+    try {
+        const runtimes = JSON.parse(envStr);
+        if (Array.isArray(runtimes)) {
+            return normalizeRuntimes(runtimes);
+        }
+        return undefined;
+    } catch (e: any) {
+        console.error(`[WARNING] Failed to parse JDTLS_JAVA_RUNTIMES: ${e.message}`);
+        return undefined;
     }
 }
 
