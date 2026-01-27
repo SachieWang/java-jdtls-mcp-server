@@ -8,10 +8,10 @@ This project is a high-performance bridge between AI agents and Java codebases. 
 
 - **Gemini Extension & Agent Skills**: Pre-packaged with structured [Agent Skills](./skills/) for Navigation, Verification, and Lifecycle management, ensuring AI agents follow optimal workflows.
 - **Native JDT.LS Launch**: Directly spawns the Java Language Server via JVM for maximum stability and performance.
+- **Enterprise-Grade Analysis**: Supports loading entire Maven projects to resolve dependencies and symbols across the whole codebase.
 - **Diagnostics Support**: Real-time retrieval of compilation errors and warnings to help AI agents verify their code changes.
-- **Instance Isolation**: Uses workspace path hashing to create isolated data directories, preventing workspace locking and allowing multi-project workflows.
-- **Environment Isolation**: Automatically clears conflicting environment variables (like `PORT`) for reliable StdIO communication.
-- **Full LSP Capabilities**: Supports Go to Definition, Find References, Hover documentation, and efficient file synchronization.
+- **Environment & Instance Isolation**: Uses workspace path hashing for isolated data directories and automatically clears conflicting environment variables (like `PORT`) for reliable communication.
+- **Full LSP Capabilities**: Supports Go to Definition, Find References, Hover documentation, Global Symbol Search, and Document Symbol extraction.
 
 ## 🛠️ Prerequisites
 
@@ -23,7 +23,7 @@ This project is a high-performance bridge between AI agents and Java codebases. 
 
 ### For Gemini CLI (Extension Mode)
 
-This project is optimized for use as a Gemini CLI extension. It includes `gemini-extension.json` and `GEMINI.md` for seamless integration.
+This project is optimized for use as a Gemini CLI extension.
 
 ```bash
 # Clone the repository
@@ -31,53 +31,48 @@ git clone <repository-url>
 cd java-jdtls-mcp-server
 npm install && npm run build
 
-# Add to your gemini-cli configuration
-# The CLI will automatically recognize the extension and the bundled Agent Skills
+# Install as Gemini extension
+gemini extensions install .
 ```
 
 ### For Claude Code / Other MCP Clients
 
 ```bash
-# Install globally via Git
-npm install -g git+https://git.wind.com.cn/zxwang.sachiew/java-jdtls-mcp-server.git
+# Configure in your MCP client (e.g., Claude Desktop)
+# Add the following entry to your configuration file
 ```
 
 ## 📖 Configuration
 
-### MCP Client Config (e.g., `claude_desktop_config.json`)
-
-```json
-{
-  "mcpServers": {
-    "java": {
-      "command": "node",
-      "args": ["/path/to/java-mcp-server/dist/index.js"],
-      "env": {
-        "JDTLS_HOME": "/path/to/jdtls-installation-root",
-        "JAVA_WORKSPACE_PATH": "/path/to/your/project/root",
-        "JAVA_HOME": "/path/to/jdk"
-      }
-    }
-  }
-}
-```
-
 ### Environment Variables
+
+The server supports loading environment variables from a `.env` file located in the **server's own installation directory**. Local `.env` values take priority over system environment variables.
 
 | Variable | Description | Required | Default |
 | :--- | :--- | :--- | :--- |
 | `JDTLS_HOME` | Path to JDT.LS installation root directory | **Yes** (for auto-start) | - |
+| `JDTLS_JAVA_HOME` | Dedicated JDK path for JDT.LS (Overrides `JAVA_HOME`) | No | System `JAVA_HOME` |
 | `JAVA_WORKSPACE_PATH` | Root path of your Java project | No | Current Working Directory |
-| `JAVA_HOME` | Path to your JDK installation | No | System `JAVA_HOME` |
+
+### Example `.env` file
+
+```ini
+JDTLS_HOME=/path/to/jdtls
+JDTLS_JAVA_HOME=/path/to/jdk-21
+JAVA_WORKSPACE_PATH=/path/to/my-java-project
+```
 
 ## 🧰 Available Tools
 
 | Tool Name | Description | Key Parameters |
 | :--- | :--- | :--- |
-| `java_start` | Initializes JDT.LS. Restarts if already running. | `jdtlsHome`, `workspacePath` |
-| `java_restart` | Forces a fresh restart of the JDT.LS process. | `jdtlsHome`, `workspacePath` |
-| `java_open_file` | Synchronizes file content to the server. | `filePath`, `content` |
-| `java_get_diagnostics` | **New!** Retrieves cached errors and warnings. | `filePath` |
+| `java_start` | Initializes JDT.LS. Restarts if already running. | `jdtlsHome`, `workspacePath`, `javaHome` |
+| `java_restart` | Forces a fresh restart of the JDT.LS process. | `jdtlsHome`, `workspacePath`, `javaHome` |
+| `java_load_maven_project` | **New!** Loads an entire Maven project and indexes symbols. | `projectPath` |
+| `java_search_symbols` | **New!** Performs global symbol search across the workspace. | `query` |
+| `java_get_file_symbols` | **New!** Extracts all symbols (classes/methods) from a file. | `filePath` |
+| `java_open_file` | Notifies the server about file content (required for diagnostics). | `filePath`, `content` |
+| `java_get_diagnostics` | Retrieves errors and warnings for a specific file. | `filePath` |
 | `java_get_definition` | Retrieves the definition location for a symbol. | `filePath`, `line`, `character` |
 | `java_get_references` | Finds all references for a symbol. | `filePath`, `line`, `character` |
 | `java_get_hover` | Gets type info and documentation for a symbol. | `filePath`, `line`, `character` |
@@ -86,9 +81,9 @@ npm install -g git+https://git.wind.com.cn/zxwang.sachiew/java-jdtls-mcp-server.
 
 The folder `skills/` contains specialized Markdown files that guide AI agents on how to use these tools effectively:
 
-- **[Navigation](./skills/java-navigation/SKILL.md)**: Strategies for exploring codebases.
-- **[Verification](./skills/java-verification/SKILL.md)**: Workflows for checking code correctness.
-- **[Lifecycle](./skills/java-lifecycle/SKILL.md)**: Handling server initialization.
+- **[Navigation](./skills/java-navigation/SKILL.md)**: Strategies for exploring codebases and using symbol search.
+- **[Verification](./skills/java-verification/SKILL.md)**: Workflows for checking code correctness via diagnostics.
+- **[Lifecycle](./skills/java-lifecycle/SKILL.md)**: Handling server initialization and auto-start configuration.
 
 ## 📄 License
 
