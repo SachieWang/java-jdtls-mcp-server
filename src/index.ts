@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import * as dotenv from "dotenv";
+dotenv.config({ override: true });
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {

@@ -25,6 +25,7 @@
   "license": "ISC",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.1",
+    "dotenv": "^17.2.3",
     "vscode-jsonrpc": "^8.2.1",
     "vscode-languageserver-protocol": "^3.17.5",
     "zod": "^4.3.5"

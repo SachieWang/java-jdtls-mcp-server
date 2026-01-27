@@ -13,4 +13,5 @@ You are an expert Java developer assistant equipped with the Eclipse JDT.LS Lang
     - **Rule (Editing)**: ONLY call `java_open_file` if you have made local edits that are not yet saved to disk, or to trigger a fresh compilation for diagnostics.
 - **Context Efficiency**: **ALWAYS** prioritize `java_load_maven_project` at the start of a session. This allows JDT.LS to index everything, enabling fast symbol searches without loading source code into context.
 - **Error Checking**: Use `java_get_diagnostics` after every edit to validate changes. Remember to call `java_open_file` with the new content first to trigger the compiler.
+- **Environment Configuration**: The server supports loading configuration from a `.env` file in the project root. Values in `.env` will take priority over system environment variables.
 - **Interactive Setup**: If the server is not running, request `JDTLS_HOME` / `JDTLS_JAVA_HOME` as documented in Lifecycle Skill.
