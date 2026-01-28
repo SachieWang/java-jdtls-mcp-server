@@ -17,8 +17,13 @@ This skill enables the agent to load an entire Maven project into the Java Langu
 ### 1. Identify Maven Project
 If the user's request involves a specific project directory and you see a `pom.xml` at the root, it is a Maven project.
 
-### 2. Load the Project
-**Immediately** after ensuring the server is started (see `java-lifecycle`), load the project:
+### 2. Pre-condition: Check Server Status
+**Crucial**: Before calling the load tool, you MUST ensure the Java Language Server is ready:
+1.  Follow the **`java-lifecycle`** skill to check the server status using `java_get_status`.
+2.  Wait until the status is **`READY`**. If it is `STARTING` or `INITIALIZING`, inform the user and wait; do NOT trigger the project load prematurely as it may cause timeouts or index corruption.
+
+### 3. Load the Project
+Once the server is `READY`, load the project:
 
 ```json
 {

@@ -18,11 +18,17 @@ This skill enables the agent to navigate a Java project, understanding its struc
 - `java_open_file`: ONLY needed if the file on disk is not up-to-date or you are making edits.
 
 ## Workflow
- 
-### 0. Project Overview & Structure Analysis
+
+### 1. Preparation (CRITICAL)
+Before starting any navigation:
+1.  **Check Server**: Call `java_get_status` (following the `java-lifecycle` skill).
+2.  **Verify Ready**: Ensure status is `READY`. If not, do NOT proceed with symbol lookups.
+3.  **Project Context**: If you are working on a new or large project, ensure it is indexed first using the `java-project-load` skill.
+
+### 2. Project Overview & Structure Analysis
 When asked to "summarize the project" or "provide an overview":
 
-1.  **Load Project**: Call `java_load_maven_project` to index types across the whole codebase.
+1.  **Load Project**: Use the `java-project-load` skill to index the entire codebase.
 2.  **Search Core Components**: Use `java_search_symbols` with broad queries like `Controller`, `Service`, or `Repository` to identify the functional layers.
 3.  **Inspect Key Files**: For identified core files, call `java_get_file_symbols` to see their structure.
 4.  **Extract Logic Summary**: Use `java_get_hover` on class definitions to understand their purpose from Javadocs.
