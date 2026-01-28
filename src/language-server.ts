@@ -334,7 +334,12 @@ export class JavaLanguageServer {
                                 maven: {
                                     enabled: true,
                                     offline: mavenConfig?.offline ?? false
+
                                 }
+                            },
+                            maven: {
+                                downloadSources: true,
+                                updateSnapshots: true
                             },
                             configuration: {
                                 runtimes: javaRuntimes || [],
@@ -449,9 +454,19 @@ export class JavaLanguageServer {
         return this.currentWorkspace;
     }
 
+    private toUri(pathOrUri: string): string {
+        // If it looks like a URI (contains ://), return it as is.
+        // This handles jdt://, file://, etc.
+        if (pathOrUri.includes('://')) {
+            return pathOrUri;
+        }
+        // Otherwise treat it as a file path
+        return pathToFileURL(pathOrUri).toString();
+    }
+
     async getDefinition(filePath: string, line: number, character: number) {
         this.ensureReady();
-        const uri = pathToFileURL(filePath).toString();
+        const uri = this.toUri(filePath);
         return this.connection!.sendRequest('textDocument/definition', {
             textDocument: { uri },
             position: { line, character }
@@ -460,7 +475,7 @@ export class JavaLanguageServer {
 
     async getReferences(filePath: string, line: number, character: number) {
         this.ensureReady();
-        const uri = pathToFileURL(filePath).toString();
+        const uri = this.toUri(filePath);
         return this.connection!.sendRequest('textDocument/references', {
             textDocument: { uri },
             position: { line, character },
@@ -470,7 +485,7 @@ export class JavaLanguageServer {
 
     async getHover(filePath: string, line: number, character: number) {
         this.ensureReady();
-        const uri = pathToFileURL(filePath).toString();
+        const uri = this.toUri(filePath);
         return this.connection!.sendRequest('textDocument/hover', {
             textDocument: { uri },
             position: { line, character }
@@ -479,7 +494,7 @@ export class JavaLanguageServer {
 
     async didOpen(filePath: string, content: string) {
         this.ensureReady();
-        const uri = pathToFileURL(filePath).toString();
+        const uri = this.toUri(filePath);
         return this.connection!.sendNotification('textDocument/didOpen', {
             textDocument: {
                 uri,
@@ -492,13 +507,13 @@ export class JavaLanguageServer {
 
     async getDiagnostics(filePath: string) {
         // 允许直接查询诊断，甚至在 READY 前（可能已经开始 publish 了）
-        const uri = pathToFileURL(filePath).toString();
+        const uri = this.toUri(filePath);
         return this.diagnostics.get(uri) || [];
     }
 
     async addWorkspaceFolder(folderPath: string) {
         this.ensureReady();
-        const uri = pathToFileURL(folderPath).toString();
+        const uri = this.toUri(folderPath);
         const baseName = path.basename(folderPath);
 
         return this.connection!.sendNotification('workspace/didChangeWorkspaceFolders', {
@@ -521,7 +536,7 @@ export class JavaLanguageServer {
 
     async getDocumentSymbols(filePath: string) {
         this.ensureReady();
-        const uri = pathToFileURL(filePath).toString();
+        const uri = this.toUri(filePath);
         return this.connection!.sendRequest('textDocument/documentSymbol', {
             textDocument: { uri }
         });

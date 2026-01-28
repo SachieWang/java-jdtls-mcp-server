@@ -129,7 +129,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     properties: {
                         filePath: {
                             type: "string",
-                            description: "Absolute path to the file",
+                            description: "Absolute path to the file or a URI (e.g. jdt://...)",
                         },
                         content: {
                             type: "string",
@@ -147,7 +147,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     properties: {
                         filePath: {
                             type: "string",
-                            description: "Absolute path to the file",
+                            description: "Absolute path to the file or a URI (e.g. jdt://...)",
                         },
                         line: {
                             type: "number",
@@ -169,7 +169,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     properties: {
                         filePath: {
                             type: "string",
-                            description: "Absolute path to the file",
+                            description: "Absolute path to the file or a URI (e.g. jdt://...)",
                         },
                         line: {
                             type: "number",
@@ -191,7 +191,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     properties: {
                         filePath: {
                             type: "string",
-                            description: "Absolute path to the file",
+                            description: "Absolute path to the file or a URI (e.g. jdt://...)",
                         },
                         line: {
                             type: "number",
@@ -213,7 +213,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     properties: {
                         filePath: {
                             type: "string",
-                            description: "Absolute path to the file",
+                            description: "Absolute path to the file or a URI (e.g. jdt://...)",
                         },
                     },
                     required: ["filePath"],
@@ -255,7 +255,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     properties: {
                         filePath: {
                             type: "string",
-                            description: "Absolute path to the Java file",
+                            description: "Absolute path to the Java file or a URI (e.g. jdt://...)",
                         },
                     },
                     required: ["filePath"],
