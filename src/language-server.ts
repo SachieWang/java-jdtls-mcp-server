@@ -243,9 +243,28 @@ export class JavaLanguageServer {
 
         this.connection.listen();
 
+        this.connection.onRequest('client/registerCapability', (params) => {
+            // console.error(`[DEBUG] client/registerCapability: ${JSON.stringify(params, null, 2)}`);
+            return {};
+        });
+
+        this.connection.onRequest('client/unregisterCapability', (params) => {
+            // console.error(`[DEBUG] client/unregisterCapability: ${JSON.stringify(params, null, 2)}`);
+            return {};
+        });
+
         this.connection.onNotification('textDocument/publishDiagnostics', (params) => {
             const uri = params.uri;
             this.diagnostics.set(uri, params.diagnostics);
+            console.error(`[DEBUG] publishDiagnostics: ${uri}`);
+        });
+
+        this.connection.onNotification('language/status', (params) => {
+            console.error(`[DEBUG] language/status: ${JSON.stringify(params, null, 2)}`);
+        });
+
+        this.connection.onNotification('language/actionableNotification', (params) => {
+            console.error(`[DEBUG] language/actionableNotification: ${JSON.stringify(params, null, 2)}`);
         });
 
         // 5. 异步初始化过程 (不阻塞工具调用)
@@ -283,6 +302,7 @@ export class JavaLanguageServer {
                             willSaveWaitUntil: true,
                             didSave: true
                         },
+                        callHierarchy: { dynamicRegistration: true },
                         completion: { dynamicRegistration: true },
                         hover: { dynamicRegistration: true },
                         signatureHelp: { dynamicRegistration: true },
@@ -356,7 +376,7 @@ export class JavaLanguageServer {
             });
 
             this.capabilities = initResult;
-            console.error('[DEBUG] the server capabilities:', this.capabilities);
+            console.error('[DEBUG] the server capabilities:', JSON.stringify(this.capabilities, null, 2));
             console.error('[STEP 4] "initialize" finished.');
             await this.connection.sendNotification('initialized', {});
             this.state = ServerState.READY;

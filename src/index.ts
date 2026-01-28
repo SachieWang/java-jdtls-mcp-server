@@ -1,5 +1,11 @@
 #!/usr/bin/env node
 import * as dotenv from "dotenv";
+
+// 强制所有日志到 stderr，防止污染 stdio 导致 JSON-RPC 解析失败
+// 必须在所有可能产生输出的操作（如 new Server, dotenv.config 等）之前或尽可能早地执行
+console.log = console.error;
+console.info = console.error;
+console.warn = console.error;
 dotenv.config({ override: true });
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -365,8 +371,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function run() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    // 强制所有日志到 stderr
-    console.log = console.error;
+
     console.error("Java MCP Server running on stdio");
 
     const jdtlsHome = process.env.JDTLS_HOME;
