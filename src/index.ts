@@ -261,6 +261,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     required: ["filePath"],
                 },
             },
+            {
+                name: "java_get_status",
+                description: "Get the current status of the Java Language Server.",
+                inputSchema: {
+                    type: "object",
+                    properties: {},
+                },
+            },
         ],
     };
 });
@@ -273,6 +281,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             case "java_start": {
                 const { jdtlsHome, workspacePath, javaHome, javaRuntimes, mavenConfig } = args as any;
                 const finalWorkspacePath = workspacePath || process.cwd();
+
+                // 幂等性检查：如果工作区一致且已经在运行，直接返回状态
+                if (javaServer.isRunning() && javaServer.getWorkspace() === finalWorkspacePath) {
+                    return {
+                        content: [{ type: "text", text: `Java Language Server is already running for this workspace. Status: ${javaServer.getState()}` }],
+                    };
+                }
+
                 if (javaServer.getState() !== "STOPPED") {
                     await javaServer.stop();
                 }
@@ -355,6 +371,17 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 const result = await javaServer.getDocumentSymbols(filePath);
                 return {
                     content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                };
+            }
+            case "java_get_status": {
+                return {
+                    content: [{
+                        type: "text",
+                        text: JSON.stringify({
+                            state: javaServer.getState(),
+                            workspace: javaServer.getWorkspace()
+                        }, null, 2)
+                    }],
                 };
             }
             default:

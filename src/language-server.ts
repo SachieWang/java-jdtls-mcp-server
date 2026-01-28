@@ -28,6 +28,7 @@ export class JavaLanguageServer {
     private diagnostics: Map<string, any[]> = new Map();
     private state: ServerState = ServerState.STOPPED;
     private lastError: string | null = null;
+    private currentWorkspace: string | null = null;
 
     constructor() { }
 
@@ -268,6 +269,7 @@ export class JavaLanguageServer {
         });
 
         // 5. 异步初始化过程 (不阻塞工具调用)
+        this.currentWorkspace = workspacePath;
         this.state = ServerState.INITIALIZING;
         this.initializeAsync(workspacePath, javaRuntimes, mavenConfig).catch(err => {
             console.error(`[CRITICAL] Background initialization failed: ${err.message}`);
@@ -439,7 +441,12 @@ export class JavaLanguageServer {
 
         this.capabilities = null;
         this.diagnostics.clear(); // 清理旧的诊断信息
+        this.currentWorkspace = null;
         this.state = ServerState.STOPPED;
+    }
+
+    getWorkspace(): string | null {
+        return this.currentWorkspace;
     }
 
     async getDefinition(filePath: string, line: number, character: number) {

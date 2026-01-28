@@ -12,30 +12,27 @@ This skill manages the underlying Eclipse JDT.LS process. It is the foundation f
 ## Tools
 - `java_start`: Starts the server.
 - `java_restart`: Restarts the server (clears state).
+- `java_get_status`: Checks current server status (READY, INITIALIZING, etc.).
 
 ## Workflow
 
 ### 1. Initialization
 When the session begins, or if you receive "Server not started" errors:
 
-1.  **Check Environment**:
+1.  **Check Status**: Call `java_get_status` to see if the server is already running and for which workspace.
+    - If status is `READY` and workspace matches current project: **STOP**, the server is ready.
+    - If status is `STARTING` or `INITIALIZING`: **Wait** and inform the user that JDT.LS is warming up in the background. Do NOT call `java_start`.
+    - If status is `STOPPED`, `ERROR`, or workspace mismatch: Proceed to start.
+2.  **Check Environment**:
     - Try to find `JDTLS_HOME` in the environment.
-    - Optionally check for `JDTLS_JAVA_HOME` if a specific Java version is needed that differs from the system default.
+    - Optionally check for `JDTLS_JAVA_HOME` if a specific Java version is needed.
     - If `JDTLS_HOME` is missing, **STOP** and ask the user properly.
-2.  **Start**: Call `java_start`. You can optionally provide `javaHome` if the user specifies a custom JDK path or if `JDTLS_JAVA_HOME` was found.
+3.  **Start**: Call `java_start`. 
     ```json
     { 
       "jdtlsHome": "/path/to/jdtls",
-      "javaHome": "/path/to/jdk-17" 
+      "workspacePath": "/current/project/path"
     }
     ```
-    *Note: `javaHome` takes precedence over `JDTLS_JAVA_HOME` and system `JAVA_HOME`. Use it if you need to enforce a specific runtime.*
+    *Note: `java_start` is now idempotent. If called on an already running workspace, it will simply return the current status instead of restarting.*
 
-### 2. Recovering from Stale State
-If the server seems unresponsive or symbol lookups are consistently failing:
-
-1.  **Restart**:
-    ```json
-    { "jdtlsHome": "..." }
-    ```
-    This kills the subprocess and spawns a fresh one, re-indexing the workspace.
