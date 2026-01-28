@@ -380,6 +380,12 @@ async function run() {
     const javaRuntimes = parseRuntimes(process.env.JDTLS_JAVA_RUNTIMES);
     const mavenConfig = getMavenConfigFromEnv();
 
+    console.error("[DEBUG] mcp server start envs: jdtlsHome", jdtlsHome);
+    console.error("[DEBUG] mcp server start envs: workspacePath", workspacePath);
+    console.error("[DEBUG] mcp server start envs: javaHome", javaHome);
+    console.error("[DEBUG] mcp server start envs: javaRuntimes", JSON.stringify(javaRuntimes, null, 2));
+    console.error("[DEBUG] mcp server start envs: mavenConfig", JSON.stringify(mavenConfig, null, 2));
+
     if (jdtlsHome) {
         const finalWorkspacePath = workspacePath || process.cwd();
         javaServer.start(jdtlsHome, finalWorkspacePath, javaHome, javaRuntimes, mavenConfig)

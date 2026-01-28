@@ -21,6 +21,31 @@
             "name": "Java Home",
             "description": "Absolute path to the JDK used to verify and launch JDT.LS (overrides system JAVA_HOME).",
             "envVar": "JDTLS_JAVA_HOME"
+        },
+        {
+            "name": "Java Workspace Path",
+            "description": "Default root path for Java workspace (default: current working directory).",
+            "envVar": "JAVA_WORKSPACE_PATH"
+        },
+        {
+            "name": "Java Runtimes",
+            "description": "JSON array of Java runtimes for different Java versions (e.g., [{\"name\": \"JavaSE-17\", \"path\": \"/path/to/jdk-17\"}]).",
+            "envVar": "JDTLS_JAVA_RUNTIMES"
+        },
+        {
+            "name": "Maven User Settings",
+            "description": "Path to custom Maven user settings.xml.",
+            "envVar": "JDTLS_MAVEN_USER_SETTINGS"
+        },
+        {
+            "name": "Maven Global Settings",
+            "description": "Path to custom Maven global settings.xml.",
+            "envVar": "JDTLS_MAVEN_GLOBAL_SETTINGS"
+        },
+        {
+            "name": "Maven Offline Mode",
+            "description": "Whether to enable Maven offline mode ('true' or 'false').",
+            "envVar": "JDTLS_MAVEN_OFFLINE"
         }
     ]
 }
