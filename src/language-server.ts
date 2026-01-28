@@ -245,7 +245,7 @@ export class JavaLanguageServer {
         this.connection.listen();
 
         this.connection.onRequest('client/registerCapability', (params) => {
-            console.error(`[DEBUG] client/registerCapability: ${JSON.stringify(params, null, 2)}`);
+            // console.error(`[DEBUG] client/registerCapability: ${JSON.stringify(params, null, 2)}`);
             return {};
         });
 
@@ -442,12 +442,17 @@ export class JavaLanguageServer {
     async stop() {
         if (this.connection) {
             try {
-                // 尝试优雅关闭，但不强制等待成功
+                // 1. 尝试优雅向服务器发送关闭请求
                 await Promise.race([
                     this.connection.sendRequest('shutdown'),
-                    new Promise(resolve => setTimeout(resolve, 800))
+                    new Promise(resolve => setTimeout(resolve, 500))
                 ]).catch(() => { });
+
+                // 2. 发送退出通知（不使用 await，因为服务器会关闭连接）
                 this.connection.sendNotification('exit');
+
+                // 3. 给 RPC 一点时间处理缓冲区的消息
+                await new Promise(resolve => setTimeout(resolve, 100));
             } catch (e) { }
 
             try {
@@ -459,7 +464,24 @@ export class JavaLanguageServer {
         if (this.process) {
             try {
                 this.process.removeAllListeners();
-                this.process.kill('SIGKILL'); // 确保物理销毁
+
+                // 创建一个等待进程退出的 Promise
+                const exitPromise = new Promise<void>((resolve) => {
+                    const timer = setTimeout(() => {
+                        if (this.process) {
+                            this.process.kill('SIGKILL');
+                        }
+                        resolve();
+                    }, 2000); // 最多等待 2 秒
+
+                    this.process?.on('exit', () => {
+                        clearTimeout(timer);
+                        resolve();
+                    });
+                });
+
+                this.process.kill('SIGTERM');
+                await exitPromise;
             } catch (e) { }
             this.process = null;
         }
