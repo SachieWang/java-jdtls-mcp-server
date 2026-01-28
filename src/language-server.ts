@@ -245,7 +245,7 @@ export class JavaLanguageServer {
         this.connection.listen();
 
         this.connection.onRequest('client/registerCapability', (params) => {
-            // console.error(`[DEBUG] client/registerCapability: ${JSON.stringify(params, null, 2)}`);
+            console.error(`[DEBUG] client/registerCapability: ${JSON.stringify(params, null, 2)}`);
             return {};
         });
 
@@ -341,6 +341,7 @@ export class JavaLanguageServer {
                                 downloadSources: true,
                                 updateSnapshots: true
                             },
+                            eclipse: { downloadSources: true },
                             configuration: {
                                 runtimes: javaRuntimes || [],
                                 maven: {
@@ -348,14 +349,49 @@ export class JavaLanguageServer {
                                     globalSettings: mavenConfig?.globalSettings,
                                 }
                             },
+                            contentProvider: { preferred: 'fernflower' },
                             references: {
                                 includeAccessors: true,
-                                includeDecompiledSources: true
+                                includeDecompiledSources: false
                             },
                             symbols: {
                                 includeSourceMethodDeclarations: true
+                            },
+                            implementationsCodeLens: { enabled: true },
+                            referencesCodeLens: { enabled: true },
+                            extendedClientCapabilities: {
+                                progressReportsSupported: true,
+                                classFileContentsSupport: true,
+                                overrideMethodsPromptSupport: true,
+                                hashCodeEqualsPromptSupport: true,
+                                advancedOrganizeImportsSupport: true,
+                                generateConstructorsPromptSupport: true,
+                                generateDelegateMethodsPromptSupport: true,
+                                advancedExtractRefactoringSupport: true,
+                                moveRefactoringSupport: true,
+                                clientHoverProvider: true,
+                                clientDocumentSymbolProvider: true,
+                                gradleChecksumWrapperPromptSupport: true,
+                                resolveAdditionalTextEditsSupport: true,
+                                advancedIntroduceParameterRefactoringSupport: true
                             }
                         }
+                    },
+                    extendedClientCapabilities: {
+                        progressReportsSupported: true,
+                        classFileContentsSupport: true,
+                        overrideMethodsPromptSupport: true,
+                        hashCodeEqualsPromptSupport: true,
+                        advancedOrganizeImportsSupport: true,
+                        generateConstructorsPromptSupport: true,
+                        generateDelegateMethodsPromptSupport: true,
+                        advancedExtractRefactoringSupport: true,
+                        moveRefactoringSupport: true,
+                        clientHoverProvider: true,
+                        clientDocumentSymbolProvider: true,
+                        gradleChecksumWrapperPromptSupport: true,
+                        resolveAdditionalTextEditsSupport: true,
+                        advancedIntroduceParameterRefactoringSupport: true
                     }
                 },
                 workspaceFolders: [
@@ -363,23 +399,7 @@ export class JavaLanguageServer {
                         name: 'workspace',
                         uri: pathToFileURL(workspacePath).toString()
                     }
-                ],
-                extendedClientCapabilities: {
-                    progressReportsSupported: true,
-                    classFileContentsSupport: true,
-                    overrideMethodsPromptSupport: true,
-                    hashCodeEqualsPromptSupport: true,
-                    advancedOrganizeImportsSupport: true,
-                    generateConstructorsPromptSupport: true,
-                    generateDelegateMethodsPromptSupport: true,
-                    advancedExtractRefactoringSupport: true,
-                    moveRefactoringSupport: true,
-                    clientHoverProvider: true,
-                    clientDocumentSymbolProvider: true,
-                    gradleChecksumWrapperPromptSupport: true,
-                    resolveAdditionalTextEditsSupport: true,
-                    advancedIntroduceParameterRefactoringSupport: true
-                }
+                ]
             });
 
             this.capabilities = initResult;
@@ -539,6 +559,20 @@ export class JavaLanguageServer {
         const uri = this.toUri(filePath);
         return this.connection!.sendRequest('textDocument/documentSymbol', {
             textDocument: { uri }
+        });
+    }
+
+    async configure(settings: any) {
+        this.ensureReady();
+        return this.connection!.sendNotification('workspace/didChangeConfiguration', {
+            settings
+        });
+    }
+
+    async getClassFileContents(uri: string): Promise<string> {
+        this.ensureReady();
+        return this.connection!.sendRequest('java/classFileContents', {
+            uri
         });
     }
 }

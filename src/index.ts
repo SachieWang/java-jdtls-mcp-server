@@ -16,6 +16,7 @@ import {
     McpError
 } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
+import * as fs from "fs";
 import { JavaLanguageServer } from "./language-server.js";
 
 const server = new Server(
@@ -269,6 +270,56 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     properties: {},
                 },
             },
+            {
+                name: "configure_jdt_ls",
+                description: "Dynamically update JDT.LS configuration (e.g. enable source downloading).",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        settings: {
+                            type: "object",
+                            description: "The settings object to send to the server",
+                        },
+                    },
+                    required: ["settings"],
+                },
+            },
+            {
+                name: "find_references",
+                description: "Find references for a symbol. This is an enhanced version of java_get_references that marks external library results.",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        filePath: {
+                            type: "string",
+                            description: "Absolute path to the file or a URI (e.g. jdt://...)",
+                        },
+                        line: {
+                            type: "number",
+                            description: "Line number (0-indexed)",
+                        },
+                        character: {
+                            type: "number",
+                            description: "Character offset (0-indexed)",
+                        },
+                    },
+                    required: ["filePath", "line", "character"],
+                },
+            },
+            {
+                name: "read_java_content",
+                description: "Read the content of a Java file, including local files and external library source code (jdt:// or jrt:// URIs).",
+                inputSchema: {
+                    type: "object",
+                    properties: {
+                        uri: {
+                            type: "string",
+                            description: "The URI or file path to read",
+                        },
+                    },
+                    required: ["uri"],
+                },
+            },
         ],
     };
 });
@@ -383,6 +434,45 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                         }, null, 2)
                     }],
                 };
+            }
+            case "configure_jdt_ls": {
+                const { settings } = args as any;
+                await javaServer.configure(settings);
+                return {
+                    content: [{ type: "text", text: "Configuration updated." }],
+                };
+            }
+            case "find_references": {
+                const { filePath, line, character } = args as any;
+                const results = await javaServer.getReferences(filePath, line, character) as any[];
+
+                if (results && Array.isArray(results)) {
+                    results.forEach(loc => {
+                        if (loc.uri && (loc.uri.startsWith("jdt://") || loc.uri.startsWith("jrt://"))) {
+                            loc.remark = "[External Library (Source Available)]";
+                        }
+                    });
+                }
+
+                return {
+                    content: [{ type: "text", text: JSON.stringify(results, null, 2) }],
+                };
+            }
+            case "read_java_content": {
+                const { uri } = args as any;
+                if (uri.startsWith("jdt://") || uri.startsWith("jrt://")) {
+                    const content = await javaServer.getClassFileContents(uri);
+                    return {
+                        content: [{ type: "text", text: content }],
+                    };
+                } else {
+                    // Treat as local file
+                    const filePath = uri.startsWith("file://") ? new URL(uri).pathname : uri;
+                    const content = fs.readFileSync(filePath, "utf-8");
+                    return {
+                        content: [{ type: "text", text: content }],
+                    };
+                }
             }
             default:
                 throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${name}`);
