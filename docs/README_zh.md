@@ -92,6 +92,13 @@ JDTLS_MAVEN_OFFLINE=false
 - **[代码验证](../skills/java-verification/SKILL.md)**：通过诊断工具自检代码正确性的工作流。
 - **[生命周期](../skills/java-lifecycle/SKILL.md)**：服务器启动与自动启动配置处理。
 
+## 📚 设计文档
+
+本项目遵循规范的设计流程，详细的技术文档请参阅 `design/` 目录：
+
+- **[概要设计说明书](../design/TD-D-01_概要设计说明书.md)**：涵盖系统架构、核心模块划分及外部接口处理。
+- **[详细设计说明书](../design/TD-D-02_详细设计说明书.md)**：包含类模型、时序图以及 `JavaLanguageServer` 的内部实现细节。
+
 ## 📄 开源协议
 
 本项目采用 ISC 协议授权。

@@ -92,7 +92,13 @@ The folder `skills/` contains specialized Markdown files that guide AI agents on
 - **[Verification](./skills/java-verification/SKILL.md)**: Workflows for checking code correctness via diagnostics.
 - **[Lifecycle](./skills/java-lifecycle/SKILL.md)**: Handling server initialization and auto-start configuration.
 
+## 📚 Design Documentation
+
+This project follows a structured design process. Detailed technical documents can be found in the `design/` directory:
+
+- **[High-level Design](./design/TD-D-01_概要设计说明书.md)**: Describes the system architecture, core modules, and external interfaces.
+- **[Detailed Design](./design/TD-D-02_详细设计说明书.md)**: Covers class models, sequence diagrams, and internal implementation details of the `JavaLanguageServer`.
+
 ## 📄 License
 
 This project is licensed under the ISC License.
-

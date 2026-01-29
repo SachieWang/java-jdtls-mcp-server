@@ -179,7 +179,7 @@ export class JavaLanguageServer {
             '-Dosgi.configuration.cascaded=true',
             '-Dlog.level=ALL',
             '-Xms1G',
-            '-Xmx1G', // 调低到 1G 与 python 脚本一致
+            '-Xmx8G', // 调低到 1G 与 python 脚本一致
             '--add-modules=ALL-SYSTEM',
             '--add-opens', 'java.base/java.util=ALL-UNNAMED',
             '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
