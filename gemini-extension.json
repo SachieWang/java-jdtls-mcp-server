@@ -8,7 +8,7 @@
             "args": [
                 "${extensionPath}${/}dist${/}index.js"
             ],
-            "cwd": "${extensionPath}"
+            "cwd": "${workspacePath}"
         }
     },
     "settings": [

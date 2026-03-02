@@ -493,18 +493,18 @@ async function run() {
 
     const jdtlsHome = process.env.JDTLS_HOME;
     const workspacePath = process.env.JAVA_WORKSPACE_PATH;
+    const finalWorkspacePath = workspacePath || process.cwd();
     const javaHome = process.env.JDTLS_JAVA_HOME;
     const javaRuntimes = parseRuntimes(process.env.JDTLS_JAVA_RUNTIMES);
     const mavenConfig = getMavenConfigFromEnv();
 
     console.error("[DEBUG] mcp server start envs: jdtlsHome", jdtlsHome);
-    console.error("[DEBUG] mcp server start envs: workspacePath", workspacePath);
+    console.error("[DEBUG] mcp server start envs: workspacePath", finalWorkspacePath);
     console.error("[DEBUG] mcp server start envs: javaHome", javaHome);
     console.error("[DEBUG] mcp server start envs: javaRuntimes", JSON.stringify(javaRuntimes, null, 2));
     console.error("[DEBUG] mcp server start envs: mavenConfig", JSON.stringify(mavenConfig, null, 2));
 
-    if (jdtlsHome) {
-        const finalWorkspacePath = workspacePath || process.cwd();
+    if (jdtlsHome && finalWorkspacePath && javaHome && javaRuntimes && mavenConfig) {
         javaServer.start(jdtlsHome, finalWorkspacePath, javaHome, javaRuntimes, mavenConfig)
             .catch((e: any) => console.error(`[WARNING] Auto-start failed: ${e.message}`));
     }
