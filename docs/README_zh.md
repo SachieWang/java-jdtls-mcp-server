@@ -37,37 +37,73 @@ gemini extensions install .
 
 ### 作为 Claude Code 或其他 MCP 客户端使用
 
-```bash
-# 在您的 MCP 客户端（如 Claude Desktop）中进行配置
-# 在配置文件中添加相应的 entry 即可
+如果是使用 Claude Code、Claude Desktop 或其他 MCP 客户端，您需要将其显式配置为 MCP Server。
+
+1. 按照上述步骤完成项目构建（`npm run build`）。
+2. 编辑您的客户端配置文件（例如 Claude Desktop 的 `claude_desktop_config.json`）。
+3. 添加服务器配置，并直接在 `env` 节点下定义您的全局环境变量：
+
+```json
+{
+  "mcpServers": {
+    "java-mcp-server": {
+      "command": "node",
+      "args": [
+        "/绝对路径/指向/java-jdtls-mcp-server/dist/index.js"
+      ],
+      "env": {
+        "JDTLS_HOME": "D:/software/jdt-language-server-latest",
+        "JDTLS_JAVA_HOME": "D:/software/java/jdk-23.0.1",
+        "JDTLS_JAVA_RUNTIMES": "[{\"name\":\"JavaSE-1.8\",\"path\":\"C:/Program Files/Java/jdk1.8.0_361\"},{\"name\":\"JavaSE-17\",\"path\":\"D:/software/jdk-17.0.7\"}]",
+        "JDTLS_MAVEN_USER_SETTINGS": "D:/software/apache-maven-3.9.3/conf/settings.xml",
+        "JDTLS_MAVEN_GLOBAL_SETTINGS": "D:/software/apache-maven-3.9.3/conf/settings.xml"
+      }
+    }
+  }
+}
 ```
 
-## 📖 详细配置
+*注意：使用 Claude Code 时，项目级的 `.env` 文件逻辑（如 `JAVA_PROJECT=true`）可能不会被原生加载（取决于具体的 MCP 客户端实现）。您可能需要直接在客户端配置中管理项目特定的变量。*
 
-### 环境变量说明
+### 1. 全局配置 (用户级 `.env`)
 
-服务器支持从**自身安装目录**下的 `.env` 文件加载环境变量。本地 `.env` 中的值将优先于系统环境变量。
+全局环境变量推荐配置一些通用的路径信息，以避免在每个项目中重复配置。全局配置文件的主路径通常位于：`USER_HOME\.gemini\extensions\java-jdtls-mcp-server\.env`（其中 `USER_HOME` 为当前用户目录，如 `C:\Users\用户1`）。
+
+**配置方式：**
+1. **安装时配置 (推荐):** 如果在使用 Gemini CLI 时启用了 `experimental.extensionConfig` 配置项，初次安装本插件时会提示您输入以下环境变量。输入完毕后，Gemini CLI 会自动在上述路径生成 `.env` 文件。
+2. **手动配置:** 您也可以自行在上述路径创建 `.env` 文件，并填写推荐的全局配置信息。
+
+**推荐全局配置示例：**
+```ini
+JDTLS_HOME=D:/software/jdt-language-server-latest
+JDTLS_JAVA_HOME=D:/software/java/jdk-23.0.1
+JAVA_WORKSPACE_PATH=
+JDTLS_JAVA_RUNTIMES=[{"name":"JavaSE-1.8","path":"C:/Program Files/Java/jdk1.8.0_361"},{"name":"JavaSE-17","path":"D:/software/jdk-17.0.7"}]
+JDTLS_MAVEN_USER_SETTINGS=D:/software/apache-maven-3.9.3/conf/settings.xml
+JDTLS_MAVEN_GLOBAL_SETTINGS=D:/software/apache-maven-3.9.3/conf/settings.xml
+```
 
 | 变量名 | 描述 | 是否必填 | 默认值 |
 | :--- | :--- | :--- | :--- |
-| `JDTLS_HOME` | JDT.LS 安装根目录路径 | **是** (用于自动启动) | - |
+| `JDTLS_HOME` | JDT.LS 安装根目录路径 | **是** | - |
 | `JDTLS_JAVA_HOME` | JDT.LS 专用的 JDK 路径 (覆盖 `JAVA_HOME`) | 否 | 系统 `JAVA_HOME` |
-| `JDTLS_JAVA_RUNTIMES` | 多版本 Java 运行时配置 (JSON 数组) | 否 | - |
-| `JDTLS_MAVEN_USER_SETTINGS` | 自定义 Maven `settings.xml` 路径 | 否 | - |
-| `JDTLS_MAVEN_OFFLINE` | 是否开启 Maven 离线模式 (`true`/`false`) | 否 | `false` |
 | `JAVA_WORKSPACE_PATH` | Java 项目的根目录路径 | 否 | 当前工作目录 (CWD) |
+| `JDTLS_JAVA_RUNTIMES` | 多版本 Java 运行时配置 (JSON 数组) | 否 | - |
+| `JDTLS_MAVEN_USER_SETTINGS` | 自定义 Maven 用户 `settings.xml` 路径 | 否 | - |
+| `JDTLS_MAVEN_GLOBAL_SETTINGS`| 自定义 Maven 全局 `settings.xml` 路径 | 否 | - |
+| `JDTLS_MAVEN_OFFLINE` | 是否开启 Maven 离线模式 (`true`/`false`) | 否 | `false` |
 
-### `.env` 文件示例
+### 2. 项目级配置 (项目级 `.env`)
+
+项目级别的 env 信息是由 Gemini CLI 等 Agent 工具加载读取的。例如，使用 Gemini CLI 时，项目级别的 env 路径通常为：`[项目根目录]/.gemini/.env`。
+
+为了避免在非 Java 项目中意外启动重量级的 Java 语言服务器，您**必须在项目级别显式激活**。请在项目级别的 `.env` 配置文件中添加以下内容：
 
 ```ini
-JDTLS_HOME=/path/to/jdtls
-JDTLS_JAVA_HOME=/path/to/jdk-21
-JAVA_WORKSPACE_PATH=/path/to/my-java-project
-# 支持多版本 JDK 自动映射与自定义 Maven
-JDTLS_JAVA_RUNTIMES=[{"name":"JavaSE-1.8","path":"/path/to/jdk-8"},{"name":"JavaSE-21","path":"/path/to/jdk-21","default":true}]
-JDTLS_MAVEN_USER_SETTINGS=/path/to/maven/conf/settings.xml
-JDTLS_MAVEN_OFFLINE=false
+# 必填项：声明当前为 Java 项目，允许自动启动 JDT.LS
+JAVA_PROJECT=true
 ```
+*(可选)* 您也可以在此项目级的 `.env` 文件中覆盖上述任何全局环境变量，以实现针对当前环境的隔离与自定义设置。
 
 ## 🧰 可用工具
 

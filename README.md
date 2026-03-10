@@ -37,37 +37,73 @@ gemini extensions install .
 
 ### For Claude Code / Other MCP Clients
 
-```bash
-# Configure in your MCP client (e.g., Claude Desktop)
-# Add the following entry to your configuration file
+For Claude Code, Claude Desktop, or other MCP clients, you'll need to configure the server explicitly as an MCP tool.
+
+1. Build the project as shown above.
+2. Edit your client's configuration file (e.g., `claude_desktop_config.json` for Claude Desktop).
+3. Add the server configuration and define your global environment variables directly within the `env` section:
+
+```json
+{
+  "mcpServers": {
+    "java-mcp-server": {
+      "command": "node",
+      "args": [
+        "/absolute/path/to/java-jdtls-mcp-server/dist/index.js"
+      ],
+      "env": {
+        "JDTLS_HOME": "D:/software/jdt-language-server-latest",
+        "JDTLS_JAVA_HOME": "D:/software/java/jdk-23.0.1",
+        "JDTLS_JAVA_RUNTIMES": "[{\"name\":\"JavaSE-1.8\",\"path\":\"C:/Program Files/Java/jdk1.8.0_361\"},{\"name\":\"JavaSE-17\",\"path\":\"D:/software/jdk-17.0.7\"}]",
+        "JDTLS_MAVEN_USER_SETTINGS": "D:/software/apache-maven-3.9.3/conf/settings.xml",
+        "JDTLS_MAVEN_GLOBAL_SETTINGS": "D:/software/apache-maven-3.9.3/conf/settings.xml"
+      }
+    }
+  }
+}
 ```
 
-## 📖 Configuration
+*Note: When using Claude Code, the project-level `.env` file logic (like `JAVA_PROJECT=true`) might not be loaded natively unless supported by the specific MCP client implementation. You may need to manage project-specific variables within the client's configuration directly.*
 
-### Environment Variables
+### 1. Global Setup (User-level `.env`)
 
-The server supports loading environment variables from a `.env` file located in the **server's own installation directory**. Local `.env` values take priority over system environment variables.
+Global environment variables are recommended for common paths to avoid repeating them in every project. The global configuration file is typically located at: `USER_HOME\.gemini\extensions\java-jdtls-mcp-server\.env` (where `USER_HOME` is your user directory, e.g., `C:\Users\User1`).
+
+**How to Configure:**
+1. **During Installation (Recommended):** If you have enabled the `experimental.extensionConfig` setting in Gemini CLI, you will be prompted to input these environment variables during the initial installation. Gemini CLI will then auto-generate the `.env` file at the path above.
+2. **Manual Configuration:** Alternatively, you can manually create the user-level `.env` file at this location and fill in the recommended information.
+
+**Recommended Configuration Example:**
+```ini
+JDTLS_HOME=D:/software/jdt-language-server-latest
+JDTLS_JAVA_HOME=D:/software/java/jdk-23.0.1
+JAVA_WORKSPACE_PATH=
+JDTLS_JAVA_RUNTIMES=[{"name":"JavaSE-1.8","path":"C:/Program Files/Java/jdk1.8.0_361"},{"name":"JavaSE-17","path":"D:/software/jdk-17.0.7"}]
+JDTLS_MAVEN_USER_SETTINGS=D:/software/apache-maven-3.9.3/conf/settings.xml
+JDTLS_MAVEN_GLOBAL_SETTINGS=D:/software/apache-maven-3.9.3/conf/settings.xml
+```
 
 | Variable | Description | Required | Default |
 | :--- | :--- | :--- | :--- |
-| `JDTLS_HOME` | Path to JDT.LS installation root directory | **Yes** (for auto-start) | - |
+| `JDTLS_HOME` | Path to JDT.LS installation root directory | **Yes** | - |
 | `JDTLS_JAVA_HOME` | Dedicated JDK path for JDT.LS (Overrides `JAVA_HOME`) | No | System `JAVA_HOME` |
-| `JDTLS_JAVA_RUNTIMES` | JSON list of Java Runtimes for different project versions | No | - |
-| `JDTLS_MAVEN_USER_SETTINGS` | Path to custom Maven `settings.xml` | No | - |
-| `JDTLS_MAVEN_OFFLINE` | Enable Maven offline mode (`true`/`false`) | No | `false` |
 | `JAVA_WORKSPACE_PATH` | Root path of your Java project | No | Current Working Directory |
+| `JDTLS_JAVA_RUNTIMES` | JSON list of Java Runtimes for different project versions | No | - |
+| `JDTLS_MAVEN_USER_SETTINGS` | Path to custom Maven user `settings.xml` | No | - |
+| `JDTLS_MAVEN_GLOBAL_SETTINGS` | Path to custom Maven global `settings.xml` | No | - |
+| `JDTLS_MAVEN_OFFLINE` | Enable Maven offline mode (`true`/`false`) | No | `false` |
 
-### Example `.env` file
+### 2. Project-Level Activation (Project-level `.env`)
+
+Project-level env info is loaded and read by agent tools like Gemini CLI. For example, when using Gemini CLI, the project-level env path is usually: `[Project Root]/.gemini/.env`.
+
+To prevent the Java language server from starting unnecessarily in non-Java projects, you **must enable it explicitly** per project. Please add the following to your project-level `.env` file:
 
 ```ini
-JDTLS_HOME=/path/to/jdtls
-JDTLS_JAVA_HOME=/path/to/jdk-21
-JAVA_WORKSPACE_PATH=/path/to/my-java-project
-# Maven and JDK Runtimes
-JDTLS_JAVA_RUNTIMES=[{"name":"JavaSE-1.8","path":"/path/to/jdk-8"},{"name":"JavaSE-21","path":"/path/to/jdk-21","default":true}]
-JDTLS_MAVEN_USER_SETTINGS=/path/to/maven/conf/settings.xml
-JDTLS_MAVEN_OFFLINE=false
+# REQUIRED: Activates the Java Language Server for this specific workspace
+JAVA_PROJECT=true
 ```
+*(Optional)* You can also place any of the global settings in this local `.env` file to override them for a specific project.
 
 ## 🧰 Available Tools
 
