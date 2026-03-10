@@ -105,6 +105,34 @@ JAVA_PROJECT=true
 ```
 *(可选)* 您也可以在此项目级的 `.env` 文件中覆盖上述任何全局环境变量，以实现针对当前环境的隔离与自定义设置。
 
+## 🧩 专家技能与 AI 规则 (Skills & Rules)
+
+本项目在 `skills/` 目录下提供了一套高阶**专家技能 (Expert Skills)**。这些技能本质上是经过优化的指令集，指导 AI Agent 以最高效的方式与 Java 语言服务器交互，避免常见陷阱（如重复启动服务器）并提升代码分析的准确性。
+
+| 技能名称 | 专家指南作用 | 核心优势 |
+| :--- | :--- | :--- |
+| `java-lifecycle` | 服务器生命周期管理 | 规范化 JDT.LS 的启动、状态检查及错误恢复流程。 |
+| `java-navigation` | 代码智能导航 | 优化查找定义、引用和符号的策略。 |
+| `java-project-load`| 项目索引加载 | 加速 Maven 项目加载，无需手动扫描文件。 |
+| `java-verification`| 代码诊断与校验 | 强制执行实时错误检查，确保代码变更的正确性。 |
+
+### 🚀 在 Gemini CLI 中使用
+
+Gemini CLI 原生支持这些技能。安装扩展后，它们会自动加载或按需激活：
+- `activate_skill java-lifecycle`
+- `activate_skill java-navigation`
+
+### 🤖 在 Claude Code 或其他 MCP 客户端中使用
+
+虽然 Claude Code 不支持 Gemini 的扩展包协议，但它可以通过其 **Rules (规则)** 系统完美集成这些技能：
+
+1.  **项目级规则**：将 `skills/` 目录下各 `SKILL.md` 文件的核心内容手动复制或引用到您 Java 项目根目录的 `.clauderules` 文件中。
+2.  **全局规则**：或者，您可以将这些指令添加到 Claude 的全局配置文件中。
+
+通过将这些规则放置在 `.clauderules` 中，Claude Code 在检测到当前处于该项目环境时，会自动遵循这些“专家工作流”，从而表现得更像一名资深的 Java 工程师。
+
+---
+
 ## 🧰 可用工具
 
 | 工具名称 | 功能描述 | 核心参数 |

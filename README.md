@@ -105,6 +105,34 @@ JAVA_PROJECT=true
 ```
 *(Optional)* You can also place any of the global settings in this local `.env` file to override them for a specific project.
 
+## 🧩 Expert Skills & AI Rules
+
+This project provides a set of high-level **Expert Skills** (located in `skills/`) that guide AI agents on the most efficient ways to interact with the Java Language Server. These skills prevent common pitfalls (like redundant server restarts) and improve code intelligence accuracy.
+
+| Skill | Expert Guide | Key Benefit |
+| :--- | :--- | :--- |
+| `java-lifecycle` | Server management | Standardizes JDT.LS startup, status checks, and error recovery. |
+| `java-navigation` | Code intelligence | Optimizes finding definitions, references, and symbols. |
+| `java-project-load`| Project indexing | Speeds up Maven project loading without manual file scanning. |
+| `java-verification`| Diagnostics | Enforces real-time error checking and verification. |
+
+### 🚀 Usage in Gemini CLI
+
+Gemini CLI can install these skills as part of the extension. Once installed, they are activated automatically or on-demand:
+- `activate_skill java-lifecycle`
+- `activate_skill java-navigation`
+
+### 🤖 Usage in Claude Code / Other MCP Clients
+
+While Claude Code doesn't support Gemini's extension packaging, it can still leverage these skills through its **Rules** system:
+
+1.  **Project-Level Rules**: Copy the contents (or relevant parts) of the `SKILL.md` files from the `skills/` directory into a `.clauderules` file in your Java project's root.
+2.  **Global Rules**: Alternatively, you can add these instructions to your global Claude configuration.
+
+By placing these rules in `.clauderules`, Claude Code will automatically adopt these "expert workflows" whenever it detects it is working within this project environment.
+
+---
+
 ## 🧰 Available Tools
 
 | Tool Name | Description | Key Parameters |
