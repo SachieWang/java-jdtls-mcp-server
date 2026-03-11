@@ -23,11 +23,6 @@
             "envVar": "JDTLS_JAVA_HOME"
         },
         {
-            "name": "Java Workspace Path",
-            "description": "Default root path for Java workspace (default: current working directory).",
-            "envVar": "JAVA_WORKSPACE_PATH"
-        },
-        {
             "name": "Java Runtimes",
             "description": "JSON array of Java runtimes for different Java versions (e.g., [{\"name\": \"JavaSE-17\", \"path\": \"/path/to/jdk-17\"}]).",
             "envVar": "JDTLS_JAVA_RUNTIMES"

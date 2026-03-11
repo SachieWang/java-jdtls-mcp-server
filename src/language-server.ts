@@ -32,9 +32,7 @@ export class JavaLanguageServer {
 
     constructor() { }
 
-    private toForwardSlashes(p: string): string {
-        return p.replace(/\\/g, '/');
-    }
+
 
     private logDiagnostics(javaExec: string) {
         try {
@@ -168,13 +166,15 @@ export class JavaLanguageServer {
         }
 
         // 4. 构建 Java 启动参数 (参考 jdtls.py)
-        // 关键点：Java 参数中的路径建议统一使用正斜杠，避免反斜杠被转义
+        // 关键点：使用 path.resolve 获取绝对路径，再统一转换为正斜杠，
+        // 因为 Eclipse OSGi 在解析含 \ 且带空格的长参数时极易发生转义或截断错误
+        const normalizeForJava = (p: string) => path.resolve(p).replace(/\\/g, '/');
         const args = [
             '-Declipse.application=org.eclipse.jdt.ls.core.id1',
             '-Dosgi.bundles.defaultStartLevel=4',
             '-Declipse.product=org.eclipse.jdt.ls.core.product',
             '-Dosgi.checkConfiguration=true',
-            `-Dosgi.sharedConfiguration.area=${this.toForwardSlashes(configPath)}`,
+            `-Dosgi.sharedConfiguration.area=${normalizeForJava(configPath)}`,
             '-Dosgi.sharedConfiguration.area.readOnly=true',
             '-Dosgi.configuration.cascaded=true',
             '-Dlog.level=ALL',
@@ -185,22 +185,25 @@ export class JavaLanguageServer {
             '--add-opens', 'java.base/java.lang=ALL-UNNAMED',
             // JVM 编码设置
             '-Dfile.encoding=UTF-8',
-            '-jar', this.toForwardSlashes(jarPath),
-            '-data', this.toForwardSlashes(dataDir)
+            '-jar', normalizeForJava(jarPath),
+            '-data', normalizeForJava(dataDir)
         ];
 
         console.error(`[STEP 1] Launching JDT.LS with direct Java and clean environment...`);
         console.error(`[STEP 1] Data Directory: ${dataDir}`);
+        // console.error(`[STEP 1] Java cmd: ${javaExec}`);
+        // console.error(`[STEP 1] Java args: ${args}`);
 
         // 在 Windows 上，即使直接调用 exe，使用 shell: true 也能更好地处理带空格的路径
         this.process = spawn(javaExec, args, {
             cwd: workspacePath,
             env: cleanEnv,
-            windowsVerbatimArguments: true, // 保持参数原样，减少转义干扰
             stdio: ['pipe', 'pipe', 'pipe']
         });
 
         const currentProcess = this.process;
+        console.error(`[STEP 1] Process Spawned: ${currentProcess.spawnfile} ${currentProcess.spawnargs.join(' ')}`);
+
         currentProcess.on('error', (err) => {
             if (this.process === currentProcess) {
                 console.error(`[JDT.LS Process Error] ${err.message}`);

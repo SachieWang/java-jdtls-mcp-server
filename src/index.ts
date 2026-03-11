@@ -512,8 +512,10 @@ async function run() {
     }
 }
 
+import * as path from "path";
+
 function normalizePath(p: string | undefined): string | undefined {
-    return p ? p.replace(/\\/g, '/') : undefined;
+    return p ? path.resolve(p) : undefined;
 }
 
 function normalizeRuntimes(runtimes: any[]): any[] {
@@ -542,7 +544,11 @@ function getMavenConfigFromEnv(): any {
 function parseRuntimes(envStr: string | undefined): any[] | undefined {
     if (!envStr) return undefined;
     try {
-        const runtimes = JSON.parse(envStr);
+        console.error(`[DEBUG] JDTLS_JAVA_RUNTIMES: ${envStr}`);
+        // 关键点：容错处理。由于环境变量不同载体或 .env 文件解析可能导致引号带上反斜杠字面量 (如 \")
+        // 把转义的 \" 替换回标准双引号 "
+        const normalizedJsonStr = envStr.replace(/\\"/g, '"');
+        const runtimes = JSON.parse(normalizedJsonStr);
         if (Array.isArray(runtimes)) {
             return normalizeRuntimes(runtimes);
         }
