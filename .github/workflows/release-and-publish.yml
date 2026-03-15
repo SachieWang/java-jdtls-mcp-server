@@ -12,6 +12,10 @@ permissions:
 jobs:
   release-and-publish:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # 关键：允许生成 JWT 令牌
+      contents: write # 关键：允许创建 Release
+      attestations: write # 建议添加：增强 provenance 验证
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
