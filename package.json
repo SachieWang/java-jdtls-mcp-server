@@ -1,5 +1,5 @@
 {
-  "name": "java-mcp-server",
+  "name": "@sachiewonder/java-jdtls-mcp-server",
   "version": "1.0.0",
   "description": "MCP Server for Java using JDT.LS",
   "main": "dist/index.js",
@@ -8,7 +8,8 @@
     "java-mcp-server": "./dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc",
