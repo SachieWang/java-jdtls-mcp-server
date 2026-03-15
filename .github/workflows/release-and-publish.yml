@@ -12,7 +12,6 @@ permissions:
 jobs:
   release-and-publish:
     runs-on: ubuntu-latest
-    environment: NPMJS
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -38,8 +37,17 @@ jobs:
           # 使用 npm version 更新版本号，--no-git-tag-version 防止产生新的 git 提交或标签
           npm version $VERSION --no-git-tag-version
 
+      - name: Debug Auth
+        run: |
+          echo "--- npm config ---"
+          npm config list
+          echo "--- npm config get registry ---"
+          npm config get registry
+          echo "--- ls -a ---"
+          ls -a # 查看是否有隐藏的 .npmrc
+
       - name: Publish to npmjs
-        run: npm publish --provenance --access public
+        run: npm publish --provenance --access public --registry=https://registry.npmjs.org/
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
