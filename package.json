@@ -7,6 +7,9 @@
   "bin": {
     "java-mcp-server": "./dist/index.js"
   },
+  "repository": {
+    "url": "https://github.com/SachieWang/java-jdtls-mcp-server"
+  },
   "files": [
     "dist",
     "README.md"
