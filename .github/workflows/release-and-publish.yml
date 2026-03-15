@@ -47,7 +47,7 @@ jobs:
           ls -a # 查看是否有隐藏的 .npmrc
 
       - name: Publish to npmjs
-        run: npm publish --provenance --access public --registry=https://registry.npmjs.org/
+        run: npm publish --provenance --access public --registry=https://registry.npmjs.org/ --verbose
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
