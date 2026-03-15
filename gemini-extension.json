@@ -4,9 +4,9 @@
     "contextFileName": "GEMINI.md",
     "mcpServers": {
         "java": {
-            "command": "node",
+            "command": "npx",
             "args": [
-                "${extensionPath}${/}dist${/}index.js"
+                "@sachiewonder/java_jdtls_mcp_server@latest"
             ],
             "cwd": "${workspacePath}"
         }
