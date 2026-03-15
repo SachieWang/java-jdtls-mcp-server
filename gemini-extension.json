@@ -1,11 +1,12 @@
 {
     "name": "java-jdtls-mcp-server",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "contextFileName": "GEMINI.md",
     "mcpServers": {
         "java": {
             "command": "npx",
             "args": [
+                "-y",
                 "@sachiewonder/java_jdtls_mcp_server@latest"
             ],
             "cwd": "${workspacePath}"
