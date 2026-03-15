@@ -1,0 +1,50 @@
+name: Release and Publish
+
+on:
+  push:
+    tags:
+      - 'v*.*.*' # Trigger when a version tag is pushed, e.g., v1.0.0
+
+permissions:
+  contents: write # Needed to create GitHub releases
+
+jobs:
+  release-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required to generate accurate changelogs based on git history
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+      - name: Sync version from tag
+        run: |
+          # 提取 tag 名称并移除 'v' 前缀 (例如将 'v1.0.1' 变成 '1.0.1')
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "Updating package.json to version $VERSION"
+          # 使用 npm version 更新版本号，--no-git-tag-version 防止产生新的 git 提交或标签
+          npm version $VERSION --no-git-tag-version
+
+      - name: Publish to npmjs
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true # Automatically generate release notes from commits
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Automatically provided by GitHub Actions
