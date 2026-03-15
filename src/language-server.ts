@@ -298,6 +298,9 @@ export class JavaLanguageServer {
                             symbolKind: {
                                 valueSet: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
                             }
+                        },
+                        diagnostic: {
+                            dynamicRegistration: true
                         }
                     },
                     textDocument: {
@@ -306,6 +309,9 @@ export class JavaLanguageServer {
                             willSave: true,
                             willSaveWaitUntil: true,
                             didSave: true
+                        },
+                        diagnostic: {
+                            dynamicRegistration: true
                         },
                         callHierarchy: { dynamicRegistration: true },
                         completion: { dynamicRegistration: true },
@@ -551,9 +557,42 @@ export class JavaLanguageServer {
     }
 
     async getDiagnostics(filePath: string) {
-        // 允许直接查询诊断，甚至在 READY 前（可能已经开始 publish 了）
+        // 1. 尝试使用主动拉取 (LSP 3.17+)
+        try {
+            const pullResult = await this.pullDiagnostics(filePath);
+            const uri = this.toUri(filePath);
+            if (pullResult) {
+                if (pullResult.kind === 'full') {
+                    this.diagnostics.set(uri, pullResult.items);
+                    return pullResult.items;
+                } else if (pullResult.kind === 'unchanged') {
+                    // 如果未变，直接返回缓存
+                    return this.diagnostics.get(uri) || [];
+                }
+            }
+        } catch (e) {
+            // 如果服务器不支持或请求失败，回退到缓存
+            console.error(`[DEBUG] pullDiagnostics failed, falling back to cache: ${e}`);
+        }
+
+        // 2. 回退到异步推送的缓存信息
         const uri = this.toUri(filePath);
         return this.diagnostics.get(uri) || [];
+    }
+
+    async pullDiagnostics(filePath: string) {
+        this.ensureReady();
+        const uri = this.toUri(filePath);
+        return this.connection!.sendRequest('textDocument/diagnostic', {
+            textDocument: { uri }
+        }) as Promise<any>;
+    }
+
+    async pullWorkspaceDiagnostics() {
+        this.ensureReady();
+        return this.connection!.sendRequest('workspace/diagnostic', {
+            previousResultIds: []
+        }) as Promise<any>;
     }
 
     async addWorkspaceFolder(folderPath: string) {

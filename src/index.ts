@@ -208,7 +208,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             {
                 name: "java_get_diagnostics",
-                description: "Get diagnostics (errors/warnings) for a file. Note: This tool relies on the server's asynchronous publishing of diagnostics. You may need to wait a moment after opening or editing a file before calling this.",
+                description: "Get diagnostics (errors/warnings) for a file. This tool now attempts to pull diagnostics actively from the server if supported (LSP 3.17+), otherwise falls back to cached results from asynchronous publishing.",
                 inputSchema: {
                     type: "object",
                     properties: {
@@ -218,6 +218,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                         },
                     },
                     required: ["filePath"],
+                },
+            },
+            {
+                name: "java_get_workspace_diagnostics",
+                description: "Pull diagnostics for the entire workspace (LSP 3.17+). Note: This may not be supported by all language server versions.",
+                inputSchema: {
+                    type: "object",
+                    properties: {},
                 },
             },
             {
@@ -399,6 +407,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             case "java_get_diagnostics": {
                 const { filePath } = args as any;
                 const result = await javaServer.getDiagnostics(filePath);
+                return {
+                    content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+                };
+            }
+            case "java_get_workspace_diagnostics": {
+                const result = await javaServer.pullWorkspaceDiagnostics();
                 return {
                     content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
                 };
