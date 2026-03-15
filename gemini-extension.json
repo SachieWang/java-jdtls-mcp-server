@@ -1,6 +1,6 @@
 {
     "name": "java-jdtls-mcp-server",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "contextFileName": "GEMINI.md",
     "mcpServers": {
         "java": {
